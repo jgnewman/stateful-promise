@@ -297,6 +297,22 @@ describe('Basic Functionality', function () {
     });
   });
 
+  it('should allow manual rejections by condition', function (done) {
+    const promise = promiser();
+    let   shouldNotBeTrue = false;
+
+    promise.then(state => {
+      return state.rejectIf(true, 'fail');
+    })
+    .then(state => {
+      shouldNotBeTrue = true;
+    })
+    .catch((state, err) => {
+      assert.equal(err, 'fail');
+      assert.equal(shouldNotBeTrue, false);
+      done();
+    })
+  });
 
 
 });

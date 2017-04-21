@@ -68,6 +68,27 @@ var State = function () {
     }
 
     /**
+     * Manually trigger a rejection in your chain under some condition.
+     * If the condition is not met, resolves.
+     *
+     * @param {Any} condition  Will be assessed for its truthiness.
+     * @param {Any} err        The error to reject with if the condition is true.
+     *
+     * @return {Promise} Always resolves with this.
+     */
+
+  }, {
+    key: "rejectIf",
+    value: function rejectIf(condition, err) {
+      var _this3 = this;
+
+      return new Promise(function (resolve) {
+        !!condition && _this3.errors.push(err);
+        resolve(_this3);
+      });
+    }
+
+    /**
      * Asynchronously loops over each item in a state property, calling an
      * iterator for each one that returns a promise. It returns a promise itself
      * that only resolves once all iterations have finished.
@@ -86,11 +107,11 @@ var State = function () {
   }, {
     key: "forEach",
     value: function forEach(prop, promiseIterator, settings) {
-      var _this3 = this;
+      var _this4 = this;
 
       settings = settings || {};
       return new Promise(function (resolve, reject) {
-        var arr = _this3[prop];
+        var arr = _this4[prop];
         var inc = 0;
 
         var execFn = function execFn(item, index) {
@@ -101,7 +122,7 @@ var State = function () {
             if (!didInc) {
               didInc = true;
               inc += 1;
-              inc === arr.length && resolve(_this3);
+              inc === arr.length && resolve(_this4);
             }
           };
 
@@ -109,7 +130,7 @@ var State = function () {
             settings.map && (arr[index] = result);
             next();
           }).catch(function (error) {
-            _this3.errors.push(settings.err || error);
+            _this4.errors.push(settings.err || error);
             next();
           });
         };
@@ -138,11 +159,11 @@ var State = function () {
   }, {
     key: "forEachSync",
     value: function forEachSync(prop, promiseIterator, settings) {
-      var _this4 = this;
+      var _this5 = this;
 
       settings = settings || {};
       return new Promise(function (resolve) {
-        var origVal = _this4[prop];
+        var origVal = _this5[prop];
 
         var runLoop = function runLoop(arr, index) {
           if (arr.length) {
@@ -153,7 +174,7 @@ var State = function () {
               if (!didAdvance) {
                 didAdvance = true;
                 if (settings.bail && didReject) {
-                  resolve(_this4);
+                  resolve(_this5);
                 } else {
                   runLoop(arr.slice(1), index + 1);
                 }
@@ -164,11 +185,11 @@ var State = function () {
               settings.map && (origVal[index] = result);
               next();
             }).catch(function (error) {
-              _this4.errors.push(settings.err || error);
+              _this5.errors.push(settings.err || error);
               next(true);
             });
           } else {
-            resolve(_this4);
+            resolve(_this5);
           }
         };
 

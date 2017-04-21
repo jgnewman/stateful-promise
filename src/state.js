@@ -48,6 +48,22 @@ class State {
   }
 
   /**
+   * Manually trigger a rejection in your chain under some condition.
+   * If the condition is not met, resolves.
+   *
+   * @param {Any} condition  Will be assessed for its truthiness.
+   * @param {Any} err        The error to reject with if the condition is true.
+   *
+   * @return {Promise} Always resolves with this.
+   */
+  rejectIf(condition, err) {
+    return new Promise(resolve => {
+      !!condition && this.errors.push(err);
+      resolve(this);
+    });
+  }
+
+  /**
    * Asynchronously loops over each item in a state property, calling an
    * iterator for each one that returns a promise. It returns a promise itself
    * that only resolves once all iterations have finished.
