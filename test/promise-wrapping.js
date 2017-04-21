@@ -65,4 +65,97 @@ describe('Promise Wrapping', function () {
 
   });
 
+  it('should allow hooking into promises', function (done) {
+    this.timeout(1000);
+
+    let shouldBeFoo = null;
+
+    function basicPromise() {
+      return new Promise(resolve => {
+        setTimeout(() => {
+          resolve('foo');
+        }, 10);
+      });
+    }
+
+    promiser()
+
+    .then(state => {
+      return state.set('foo', promiser.hook(basicPromise(), (result, next) => {
+        shouldBeFoo = result;
+        next();
+      }));
+    })
+
+    .then(state => {
+      assert.equal(state.foo, 'foo');
+      assert.equal(shouldBeFoo, 'foo');
+      done();
+    })
+  });
+
+  it('should add properties to objects in promise fashion', function (done) {
+    this.timeout(1000);
+
+    function basicPromise() {
+      return new Promise(resolve => {
+        setTimeout(() => {
+          resolve('bar');
+        }, 10);
+      });
+    }
+
+    promiser({
+      foo: [{}, {}, {}]
+    })
+
+    .then(state => {
+      return state.forEach('foo', obj => {
+        return promiser.addProp(obj, 'name', basicPromise())
+      });
+    })
+
+    .then(state => {
+      assert.equal(state.foo[0].name, 'bar');
+      assert.equal(state.foo[1].name, 'bar');
+      assert.equal(state.foo[2].name, 'bar');
+      done();
+    })
+
+  });
+
+  it('should add properties to objects cooperatively with map', function (done) {
+    this.timeout(1000);
+
+    function basicPromise() {
+      return new Promise(resolve => {
+        setTimeout(() => {
+          resolve({name: 'baz'});
+        }, 10);
+      });
+    }
+
+    promiser({
+      foo: [{}, {}, {}],
+      bar: [{}, {}, {}]
+    })
+
+    .then(state => {
+      return state.forEach('foo', (obj, index) => {
+        return promiser.addProp(state.bar[index], 'name', basicPromise())
+      }, { map: true });
+    })
+
+    .then(state => {
+      assert.deepEqual(state.foo[0], {name: 'baz'});
+      assert.deepEqual(state.foo[1], {name: 'baz'});
+      assert.deepEqual(state.foo[2], {name: 'baz'});
+      assert.deepEqual(state.bar[0].name, {name: 'baz'});
+      assert.deepEqual(state.bar[1].name, {name: 'baz'});
+      assert.deepEqual(state.bar[2].name, {name: 'baz'});
+      done();
+    })
+
+  })
+
 });

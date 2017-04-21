@@ -35,4 +35,46 @@ promiser.wrap = function (fn) {
   }
 };
 
+/**
+ * Allows you to hook into the resolution of a promise and perform
+ * an action before the rest of the promise chain is executed.
+ * NOTE: Because hooks may contain async actions, you'll need to call
+ * the `next` function to continue the chain.
+ *
+ * @param  {Promise}  promise Any promise.
+ * @param  {Function} hook    What to do when a promise resolves.
+ *
+ * @return {Promise} Resolves/rejects in accordance with the argument promise.
+ */
+promiser.hook = function (promise, hook) {
+  return new Promise((resolve, reject) => {
+    promise.then(result => {
+      const next = () => resolve(result);
+      hook(result, next);
+      resolve(result);
+    })
+    .catch(err => {
+      reject(err);
+    })
+  });
+}
+
+/**
+ * Functions kind of like promise middle-ware.
+ * When a promise resolves, add its result to a provided object as a property
+ * under a provided name. Then complete the resolution.
+ *
+ * @param {Object}  obj      Will take a new property/have a property modified.
+ * @param {String}  name     The name of the property to add/modify.
+ * @param {Promise} promise  The promise whose resolved value will go on the object.
+ *
+ * @return {Promise} Resolves/rejects in accordance with the argument promise.
+ */
+promiser.addProp = function (obj, name, promise) {
+  return promiser.hook(promise, (result, next) => {
+    obj[name] = result;
+    next()
+  });
+};
+
 export default promiser;
