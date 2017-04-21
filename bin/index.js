@@ -48,6 +48,24 @@ promiser.wrap = function (fn) {
 };
 
 /**
+ * Allows you to recurse over a function many times until ultimately
+ * resolving or rejecting the recurser.
+ *
+ * @param  {Function} fn  Executes as many times as you want. Call it again by
+ *                        calling `next`, or call `resolve/reject` to end.
+ *
+ * @return {Promise}
+ */
+promiser.recur = function (fn) {
+  return new Promise(function (resolve, reject) {
+    var next = function next() {
+      return fn(next, resolve, reject);
+    };
+    next();
+  });
+};
+
+/**
  * Allows you to hook into the resolution of a promise and perform
  * an action before the rest of the promise chain is executed.
  * NOTE: Because hooks may contain async actions, you'll need to call

@@ -156,6 +156,34 @@ describe('Promise Wrapping', function () {
       done();
     })
 
-  })
+  });
+
+  it('should create a recursive promise', function (done) {
+    this.timeout(1000);
+
+    let inc = 0;
+
+    promiser()
+
+    .then(state => {
+      return state.set('foo', promiser.recur((next, resolve, reject) => {
+        setTimeout(() => {
+          inc ++;
+          if (inc > 2) {
+            resolve('foo');
+          } else {
+            next();
+          }
+        }, 10)
+      }))
+    })
+
+    .then(state => {
+      assert.equal(inc, 3);
+      assert.equal(state.foo, 'foo');
+      done();
+    })
+
+  });
 
 });
