@@ -34,7 +34,7 @@ export function executeChain(statefulPromise, queue, queueIsCatchers) {
       });
 
     // If we returned the state, keep iterating immediately.
-    } else if (maybePromise === statefulPromise.state) {
+    } else {
       return next();
     }
   }

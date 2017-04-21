@@ -27,11 +27,11 @@ describe('Basic Functionality', function () {
     });
   });
 
-  it('should chain `then` functions when state is returned', function (done) {
+  it('should chain `then` functions when not returning a promise', function (done) {
     const promise = promiser();
     promise
       .then(state => {
-        return state;
+        return undefined;
       })
       .then(state => {
         assert.ok(state);
