@@ -78,6 +78,7 @@ var State = function () {
      * @param  {Object} settings          Optional. Allows the following keys:
      *                                      err: {Any} The error to collect if any promise is rejected.
      *                                      map: {Boolean} If true, maps new changes to the existing property.
+     *                                      (no bail key here because that doesn't work with async)
      *
      * @return {Promise} Always resolves with this.
      */
@@ -129,6 +130,7 @@ var State = function () {
      * @param  {Object} settings          Optional. Allows the following keys:
      *                                      err: {Any} The error to collect if any promise is rejected.
      *                                      map: {Boolean} If true, maps new changes to the existing property.
+     *                                      bail: {Boolean} If true, will bail out of the loop after the first rejection.
      *
      * @return {Promise} Always resolves with this.
      */
@@ -147,10 +149,14 @@ var State = function () {
             var didAdvance = false;
             var promise = promiseIterator(arr[0], index);
 
-            var next = function next() {
+            var next = function next(didReject) {
               if (!didAdvance) {
                 didAdvance = true;
-                runLoop(arr.slice(1), index + 1);
+                if (settings.bail && didReject) {
+                  resolve(_this4);
+                } else {
+                  runLoop(arr.slice(1), index + 1);
+                }
               }
             };
 
@@ -159,7 +165,7 @@ var State = function () {
               next();
             }).catch(function (error) {
               _this4.errors.push(settings.err || error);
-              next();
+              next(true);
             });
           } else {
             resolve(_this4);

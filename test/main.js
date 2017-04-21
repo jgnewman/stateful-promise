@@ -1,18 +1,26 @@
 import assert from 'assert';
-import StatefulPromise from '../bin/index';
+import promiser from '../bin/index';
 
 describe('Basic Functionality', function () {
 
   it('should create a StatefulPromise', function () {
-    const promise = new StatefulPromise();
+    const promise = promiser();
     assert.equal(typeof promise, 'object');
     assert.equal(typeof promise.then, 'function');
     assert.equal(typeof promise.catch, 'function');
   });
 
+  it('should error if you try to provide a bad state', function () {
+    try {
+      const promise = promiser(4);
+    } catch (_) {
+      assert.ok(true);
+    }
+  });
+
   it('should pass a state into `then`', function (done) {
     const origState = {foo: 'bar'};
-    const promise = new StatefulPromise(origState);
+    const promise = promiser(origState);
     promise.then(state => {
       assert.equal(state.foo, origState.foo);
       done();
@@ -20,7 +28,7 @@ describe('Basic Functionality', function () {
   });
 
   it('should chain `then` functions when state is returned', function (done) {
-    const promise = new StatefulPromise();
+    const promise = promiser();
     promise
       .then(state => {
         return state;
@@ -32,7 +40,7 @@ describe('Basic Functionality', function () {
   });
 
   it('should add a property to the state', function (done) {
-    const promise = new StatefulPromise();
+    const promise = promiser();
     promise.then(state => {
       return state.set('foo', new Promise(resolve => {
         resolve('bar');
@@ -45,7 +53,7 @@ describe('Basic Functionality', function () {
   });
 
   it('should update a property on the state', function (done) {
-    const promise = new StatefulPromise({ foo: 'bar' });
+    const promise = promiser({ foo: 'bar' });
     promise.then(state => {
       return state.set('foo', new Promise(resolve => {
         resolve('baz');
@@ -59,7 +67,7 @@ describe('Basic Functionality', function () {
 
   it('should not have problems with the asynchronous nature of promises', function (done) {
     this.timeout(1000);
-    const promise = new StatefulPromise();
+    const promise = promiser();
     promise.then(state => {
       return state.set('foo', new Promise(resolve => {
         setTimeout(() => {
@@ -74,7 +82,7 @@ describe('Basic Functionality', function () {
   });
 
   it('should collect errors and pass them to a `catch` block', function (done) {
-    const promise = new StatefulPromise();
+    const promise = promiser();
     promise.then(state => {
       return state.set('foo', new Promise((resolve, reject) => {
         reject('fail');
@@ -88,7 +96,7 @@ describe('Basic Functionality', function () {
   });
 
   it('should chain `catch` blocks', function (done) {
-    const promise = new StatefulPromise();
+    const promise = promiser();
     let   firstCatchCalled = false;
 
     promise.then(state => {
@@ -108,7 +116,7 @@ describe('Basic Functionality', function () {
   });
 
   it('should skip `then` blocks that fall after a rejection', function (done) {
-    const promise = new StatefulPromise();
+    const promise = promiser();
     let   inc     = 0;
 
     promise.then(state => {
@@ -133,7 +141,7 @@ describe('Basic Functionality', function () {
   });
 
   it('should should not matter where in the chain a `catch` block falls', function (done) {
-    const promise = new StatefulPromise();
+    const promise = promiser();
     let   inc     = 0;
 
     promise.then(state => {
@@ -160,7 +168,7 @@ describe('Basic Functionality', function () {
   });
 
   it('should override errors when told', function (done) {
-    const promise = new StatefulPromise();
+    const promise = promiser();
     promise.then(state => {
       return state.set('foo', new Promise((resolve, reject) => {
         reject('fail');
@@ -175,7 +183,7 @@ describe('Basic Functionality', function () {
   it('should iterate over a state property synchronously', function (done) {
     this.timeout(1000);
 
-    const promise = new StatefulPromise({ foo: [1, 2, 3] });
+    const promise = promiser({ foo: [1, 2, 3] });
     let   inc     = 0;
 
     promise.then(state => {
@@ -195,7 +203,7 @@ describe('Basic Functionality', function () {
   });
 
   it('should iterate over a state property asynchronously', function (done) {
-    const promise = new StatefulPromise({ foo: [1, 2, 3] });
+    const promise = promiser({ foo: [1, 2, 3] });
     let   inc     = 0;
 
     promise.then(state => {
@@ -215,7 +223,7 @@ describe('Basic Functionality', function () {
   });
 
   it('should map a state property synchronously and asynchronously', function (done) {
-    const promise = new StatefulPromise({ foo: [1, 2, 3] });
+    const promise = promiser({ foo: [1, 2, 3] });
     let   inc     = 0;
 
     promise.then(state => {
@@ -243,7 +251,7 @@ describe('Basic Functionality', function () {
   });
 
   it('should collect errors from `forEach`', function (done) {
-    const promise = new StatefulPromise({ foo: [1, 2, 3] });
+    const promise = promiser({ foo: [1, 2, 3] });
     promise.then(state => {
       return state.forEach('foo', (num, index) => {
         return new Promise((resolve, reject) => {
@@ -259,7 +267,7 @@ describe('Basic Functionality', function () {
   });
 
   it('should override errors from `forEach`', function (done) {
-    const promise = new StatefulPromise({ foo: [1, 2, 3] });
+    const promise = promiser({ foo: [1, 2, 3] });
     promise.then(state => {
       return state.forEach('foo', (num, index) => {
         return new Promise((resolve, reject) => {
@@ -269,6 +277,22 @@ describe('Basic Functionality', function () {
     })
     .catch((state, ...errors) => {
       assert.equal(errors[0], 404);
+      done();
+    });
+  });
+
+  it('should allow early bailing out from `forEachSync`', function (done) {
+    const promise = promiser({ foo: [1, 2, 3] });
+    promise.then(state => {
+      return state.forEachSync('foo', (num, index) => {
+        return new Promise((resolve, reject) => {
+          reject('fail');
+        });
+      }, { bail: true });
+    })
+    .catch((state, ...errors) => {
+      assert.equal(errors.length, 1); // Maybe change this to stop after the first rejection? Maybe as a setting?
+      assert.equal(errors[0], 'fail');
       done();
     });
   });

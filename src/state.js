@@ -58,6 +58,7 @@ class State {
    * @param  {Object} settings          Optional. Allows the following keys:
    *                                      err: {Any} The error to collect if any promise is rejected.
    *                                      map: {Boolean} If true, maps new changes to the existing property.
+   *                                      (no bail key here because that doesn't work with async)
    *
    * @return {Promise} Always resolves with this.
    */
@@ -105,6 +106,7 @@ class State {
    * @param  {Object} settings          Optional. Allows the following keys:
    *                                      err: {Any} The error to collect if any promise is rejected.
    *                                      map: {Boolean} If true, maps new changes to the existing property.
+   *                                      bail: {Boolean} If true, will bail out of the loop after the first rejection.
    *
    * @return {Promise} Always resolves with this.
    */
@@ -118,10 +120,14 @@ class State {
           let didAdvance = false;
           const promise = promiseIterator(arr[0], index);
 
-          const next = () => {
+          const next = (didReject) => {
             if (!didAdvance) {
               didAdvance = true;
-              runLoop(arr.slice(1), index + 1);
+              if (settings.bail && didReject) {
+                resolve(this);
+              } else {
+                runLoop(arr.slice(1), index + 1);
+              }
             }
           };
 
@@ -132,7 +138,7 @@ class State {
 
           .catch(error => {
             this.errors.push(settings.err || error);
-            next();
+            next(true);
           });
 
         } else {
