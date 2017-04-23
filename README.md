@@ -1,5 +1,7 @@
 # stateful-promise
 
+![Travis-CI](https://travis-ci.org/jgnewman/stateful-promise.svg?branch=master)
+
 #### Now with double the promising power!
 
 Stateful-promise is a wrapper around the native Promise API providing an updatable state available throughout your promise chain as well as many useful methods for simplifying and predictably dealing with promises.
