@@ -438,7 +438,7 @@ promiser({ foo: [1, 2, 3] })
 
 Uses a promise to push an item to an array.
 
-- `array` {String} The array to affect.
+- `array` {Array} The array to affect.
 - `promise` {Promise} The result of this promise becomes the new array value.
 - `err` {Any} _Optional._ If provided, will override the error resulting from a promise rejection.
 
@@ -482,7 +482,7 @@ promiser({ foo: [1, 2, 3] })
 
 Uses a promise to unshift an item to an array.
 
-- `array` {String} The array to affect.
+- `array` {Array} The array to affect.
 - `promise` {Promise} The result of this promise becomes the new array value.
 - `err` {Any} _Optional._ If provided, will override the error resulting from a promise rejection.
 
