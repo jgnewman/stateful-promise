@@ -199,7 +199,7 @@ readdir('./some/directory').then(files => console.log(files))
 
 #### `promiser.hook(promise, hook)`
 
-Functions like "promise middleware". Hooks into the resolution of a promise and runs a function when that occurs. Requires you to manually trigger the full resolution of the promise.
+Works kind of like "promise middleware". Hooks into the resolution of a promise and runs a function when that occurs. Requires you to manually trigger the full resolution of the promise.
 
 - `promise` {Promise} Any native promise.
 - `hook` {Function} Takes parameters `result` and `next` where `result` is the result of the promise and `next` is a function that triggers advancement. This parameter is provided in case your hook contains asynchronous actions.
@@ -208,7 +208,7 @@ Returns a Promise.
 
 ```javascript
 promiser.hook(database.getRecords(), (result, next) => {
-  console.log(result); // The records that were retrieved
+  console.log(result); // [record, record, record, ...]
   next(); // Trigger the next function in the promise chain.
 });
 ```
@@ -674,7 +674,7 @@ promiser({ num: 20 })
 
 #### `State#handle(promise [, err])`
 
-Allows you to pass a normal promise through in a way that takes full advantage of the system but doesn't take any other actions. You should use this method when you don't need to make use of the value resolved by the promise.
+Allows you to pass a normal promise through in a way that takes full advantage of the system but doesn't take any other actions to manipulate the state. You should use this method when you don't need to make use of the value resolved by the promise.
 
 - `promise` {Promise} The result of this promise is not trapped for you anywhere.
 - `err` {Any} _Optional._ If provided, will override the error resulting from a promise rejection.
