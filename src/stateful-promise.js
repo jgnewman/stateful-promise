@@ -54,7 +54,7 @@ class StatefulPromise {
    */
   catch(fn) {
     this.catchers.push(() => {
-      return fn(this.state, ...this.state.errors);
+      return fn(this.state, ...this.state._errors);
     });
     return this;
   }

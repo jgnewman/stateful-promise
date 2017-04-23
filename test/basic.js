@@ -1,5 +1,6 @@
 import assert from 'assert';
 import promiser from '../bin/index';
+import BluebirdPromise from 'bluebird';
 
 describe('Basic Functionality', function () {
 
@@ -39,5 +40,16 @@ describe('Basic Functionality', function () {
       });
   });
 
+  it('should work with other promise engines', function (done) {
+    promiser.use(BluebirdPromise);
+
+    const origState = {foo: 'bar'};
+    const promise = promiser(origState);
+    promise.then(state => {
+      assert.equal(state.foo, origState.foo);
+      promiser.use(Promise);
+      done();
+    });
+  })
 
 });

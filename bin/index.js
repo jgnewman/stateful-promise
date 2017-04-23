@@ -10,6 +10,8 @@ var _statefulPromise = require('./stateful-promise');
 
 var _statefulPromise2 = _interopRequireDefault(_statefulPromise);
 
+var _utils = require('./utils');
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 /**
@@ -28,6 +30,19 @@ function promiser(state) {
 }
 
 /**
+ * Determines the Promise engine that will be used for all
+ * Promise instantiation. If not called, we'll default to Promise which
+ * may or may not exist in all environments.
+ *
+ * @param  {Class} engine  Should implement Promises A+
+ *
+ * @return {undefined}
+ */
+promiser.use = function (engine) {
+  return (0, _utils.assignPromiseEngine)(engine);
+};
+
+/**
  * Wraps a callback-using function such that it uses a promise instead.
  *
  * @param  {Function} asyncWithCallback  The function to wrap.
@@ -37,7 +52,7 @@ function promiser(state) {
 promiser.wrap = function (fn) {
   return function () {
     var args = Array.prototype.slice.call(arguments || []);
-    return new Promise(function (resolve, reject) {
+    return (0, _utils.createNativePromise)(function (resolve, reject) {
       var callback = function callback(err, success) {
         err ? reject(err) : resolve(success);
       };
@@ -57,7 +72,7 @@ promiser.wrap = function (fn) {
  * @return {Promise}
  */
 promiser.recur = function (fn) {
-  return new Promise(function (resolve, reject) {
+  return (0, _utils.createNativePromise)(function (resolve, reject) {
     var next = function next() {
       return fn(next, resolve, reject);
     };
@@ -77,34 +92,15 @@ promiser.recur = function (fn) {
  * @return {Promise} Resolves/rejects in accordance with the argument promise.
  */
 promiser.hook = function (promise, hook) {
-  return new Promise(function (resolve, reject) {
+  return (0, _utils.createNativePromise)(function (resolve, reject) {
     promise.then(function (result) {
       var next = function next() {
         return resolve(result);
       };
       hook(result, next);
-      resolve(result);
     }).catch(function (err) {
       reject(err);
     });
-  });
-};
-
-/**
- * Functions kind of like promise middle-ware.
- * When a promise resolves, add its result to a provided object as a property
- * under a provided name. Then complete the resolution.
- *
- * @param {Object}  obj      Will take a new property/have a property modified.
- * @param {String}  name     The name of the property to add/modify.
- * @param {Promise} promise  The promise whose resolved value will go on the object.
- *
- * @return {Promise} Resolves/rejects in accordance with the argument promise.
- */
-promiser.addProp = function (obj, name, promise) {
-  return promiser.hook(promise, function (result, next) {
-    obj[name] = result;
-    next();
   });
 };
 

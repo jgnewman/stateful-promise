@@ -86,7 +86,7 @@ var StatefulPromise = function () {
       var _this3 = this;
 
       this.catchers.push(function () {
-        return fn.apply(undefined, [_this3.state].concat(_toConsumableArray(_this3.state.errors)));
+        return fn.apply(undefined, [_this3.state].concat(_toConsumableArray(_this3.state._errors)));
       });
       return this;
     }

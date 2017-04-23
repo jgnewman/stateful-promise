@@ -1,7 +1,68 @@
 import assert from 'assert';
 import promiser from '../bin/index';
+import BluebirdPromise from 'bluebird';
 
 describe('State Methods', function () {
+
+  it('should statify normal promises', function (done) {
+    this.timeout(1000);
+
+    let initialState;
+
+    function prom() {
+      return new Promise(resolve => {
+        setTimeout(() => {
+          resolve('foo');
+        }, 10)
+      })
+    }
+
+    promiser()
+
+    .then(state => {
+      initialState = state;
+      return state.handle(prom());
+    })
+
+    .then(state => {
+      assert.equal(state, initialState);
+      done();
+    })
+
+  });
+
+  it('should collect errors when statifying normal promises', function (done) {
+    this.timeout(1000);
+
+    let initialState;
+    let shouldNotBeTrue = false;
+
+    function prom() {
+      return new Promise((resolve, reject) => {
+        setTimeout(() => {
+          reject('foo');
+        }, 10)
+      })
+    }
+
+    promiser()
+
+    .then(state => {
+      initialState = state;
+      return state.handle(prom(), 'bar');
+    })
+
+    .then(state => {
+      shouldNotBeTrue = true;
+    })
+
+    .catch((state, err) => {
+      assert.equal(shouldNotBeTrue, false);
+      assert.equal(err, 'bar');
+      done();
+    })
+
+  });
 
   it('should add a property to the state', function (done) {
     const promise = promiser();
@@ -191,22 +252,22 @@ describe('State Methods', function () {
     let   inc     = 0;
 
     promise.then(state => {
-      return state.forEachSync('foo', (num, index) => {
+      return state.map('foo', (num, index) => {
         return new Promise(resolve => {
           resolve(num + 1);
         });
-      }, { map: true });
+      });
     })
     .then(state => {
       assert.deepEqual(state.foo, [2, 3, 4]);
       return state;
     })
     .then(state => {
-      return state.forEach('foo', (num, index) => {
+      return state.map('foo', (num, index) => {
         return new Promise(resolve => {
           resolve(num + 1);
         });
-      }, { map: true });
+      });
     })
     .then(state => {
       assert.deepEqual(state.foo, [3, 4, 5]);
@@ -237,7 +298,7 @@ describe('State Methods', function () {
         return new Promise((resolve, reject) => {
           reject('fail');
         });
-      }, { err: 404 });
+      }, 404);
     })
     .catch((state, ...errors) => {
       assert.equal(errors[0], 404);
@@ -252,7 +313,7 @@ describe('State Methods', function () {
         return new Promise((resolve, reject) => {
           reject('fail');
         });
-      }, { bail: true });
+      });
     })
     .catch((state, ...errors) => {
       assert.equal(errors.length, 1); // Maybe change this to stop after the first rejection? Maybe as a setting?
@@ -260,6 +321,150 @@ describe('State Methods', function () {
       done();
     });
   });
+
+  it('should allow early bailing out from `mapSync`', function (done) {
+    const promise = promiser({ foo: [1, 2, 3] });
+    promise.then(state => {
+      return state.mapSync('foo', (num, index) => {
+        return new Promise((resolve, reject) => {
+          reject('fail');
+        });
+      });
+    })
+    .catch((state, ...errors) => {
+      assert.equal(errors.length, 1); // Maybe change this to stop after the first rejection? Maybe as a setting?
+      assert.equal(errors[0], 'fail');
+      done();
+    });
+  });
+
+  it('should add properties to objects in promise fashion', function (done) {
+    this.timeout(1000);
+
+    function basicPromise() {
+      return new Promise(resolve => {
+        setTimeout(() => {
+          resolve('bar');
+        }, 10);
+      });
+    }
+
+    promiser({
+      foo: [{}, {}, {}]
+    })
+
+    .then(state => {
+      return state.forEach('foo', obj => {
+        return state.setTo(obj, 'name', basicPromise())
+      });
+    })
+
+    .then(state => {
+      assert.equal(state.foo[0].name, 'bar');
+      assert.equal(state.foo[1].name, 'bar');
+      assert.equal(state.foo[2].name, 'bar');
+      done();
+    })
+
+  });
+
+  it('should add properties to top-level state objects too', function (done) {
+
+    promiser({
+      foo: [1, 2, 3]
+    })
+
+    .then(state => {
+      return state.setTo(state.foo, 3, new Promise(resolve => resolve(4)))
+    })
+
+    .then(state => {
+      assert.equal(state.foo.length, 4);
+      assert.equal(state.foo[3], 4);
+      done();
+    })
+
+  });
+
+  it('should push an item to an array', function (done) {
+
+    promiser({
+      foo: [1, 2, 3]
+    })
+
+    .then(state => {
+      return state.pushTo(state.foo, new Promise(resolve => resolve(4)))
+    })
+
+    .then(state => {
+      assert.equal(state.foo[3], 4);
+      done();
+    })
+
+  });
+
+  it('should unshift an item to an array', function (done) {
+
+    promiser({
+      foo: [1, 2, 3]
+    })
+
+    .then(state => {
+      return state.unshiftTo(state.foo, new Promise(resolve => resolve(0)))
+    })
+
+    .then(state => {
+      assert.equal(state.foo[0], 0);
+      done();
+    })
+
+  });
+
+  it('should push an item to a state array', function (done) {
+
+    promiser({
+      foo: [1, 2, 3]
+    })
+
+    .then(state => {
+      return state.push('foo', new Promise(resolve => resolve(4)))
+    })
+
+    .then(state => {
+      assert.equal(state.foo[3], 4);
+      done();
+    })
+
+  });
+
+  it('should unshift an item to a state array', function (done) {
+
+    promiser({
+      foo: [1, 2, 3]
+    })
+
+    .then(state => {
+      return state.unshift('foo', new Promise(resolve => resolve(0)))
+    })
+
+    .then(state => {
+      assert.equal(state.foo[0], 0);
+      done();
+    })
+
+  });
+
+
+
+
+
+
+
+
+
+
+
+
 
   it('should allow manual rejections by condition', function (done) {
     const promise = promiser();
@@ -276,6 +481,109 @@ describe('State Methods', function () {
       assert.equal(shouldNotBeTrue, false);
       done();
     })
+  });
+
+  it('should allow manual rejections by multiple conditions', function (done) {
+    const promise = promiser();
+    let   shouldNotBeTrue = false;
+
+    promise.then(state => {
+      return state.rejectIfAny([false, 1], [false, 2], [true,  3]);
+    })
+    .then(state => {
+      shouldNotBeTrue = true;
+    })
+    .catch((state, err) => {
+      assert.equal(err, 3);
+      assert.equal(shouldNotBeTrue, false);
+      done();
+    })
+  });
+
+  it('should convert the state to an object', function (done) {
+    const initial = { foo: 'bar' };
+
+    promiser(initial)
+
+    .then(state => {
+      const obj = state.toObject();
+      assert.deepEqual(obj, initial);
+      done();
+    })
+  });
+
+  it('should convert the state to an object and include errors', function (done) {
+    const initial = { foo: 'bar' };
+
+    promiser(initial)
+
+    .then(state => {
+      const obj = state.toObject({ includeErrors: true });
+      assert.ok(Array.isArray(obj._errors));
+      done();
+    })
+  });
+
+  it('should convert the state to an object and exclude properties', function (done) {
+    const initial = { foo: 'bar', baz: 'quux' };
+
+    promiser(initial)
+
+    .then(state => {
+      const obj = state.toObject({ exclude: ['foo'] });
+      assert.ok(Object.keys(obj).length === 1);
+      assert.equal(obj.baz, 'quux');
+      done();
+    })
+  });
+
+  it('should call `toObject` on other objects as well', function (done) {
+    const initial = { foo: 'bar', baz: 'quux' };
+
+    promiser()
+
+    .then(state => {
+      const obj = state.toObject.call(initial, { exclude: ['foo'] });
+      assert.ok(Object.keys(obj).length === 1);
+      assert.equal(obj.baz, 'quux');
+      done();
+    })
+  });
+
+  it('should convert only part of the state to an object', function (done) {
+    const initial = { a: 1, b: 2, c: 3, d: 4 };
+
+    promiser(initial)
+
+    .then(state => {
+      const obj = state.toPartialObject('b', 'c');
+      assert.ok(!obj.a);
+      assert.ok(!obj.d);
+      assert.equal(obj.b, 2);
+      assert.equal(obj.c, 3);
+      done();
+    })
+  });
+
+  it('should work with other promise engines', function (done) {
+    promiser.use(BluebirdPromise);
+
+    const promise = promiser();
+    let   shouldNotBeTrue = false;
+
+    promise.then(state => {
+      return state.rejectIf(true, 'fail');
+    })
+    .then(state => {
+      shouldNotBeTrue = true;
+    })
+    .catch((state, err) => {
+      assert.equal(err, 'fail');
+      assert.equal(shouldNotBeTrue, false);
+      promiser.use(Promise);
+      done();
+    })
+
   });
 
 });

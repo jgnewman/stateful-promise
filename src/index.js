@@ -1,4 +1,5 @@
 import StatefulPromise from './stateful-promise';
+import { assignPromiseEngine, createNativePromise } from './utils';
 
 /**
  * The main function to be exported.
@@ -16,6 +17,19 @@ function promiser(state) {
 }
 
 /**
+ * Determines the Promise engine that will be used for all
+ * Promise instantiation. If not called, we'll default to Promise which
+ * may or may not exist in all environments.
+ *
+ * @param  {Class} engine  Should implement Promises A+
+ *
+ * @return {undefined}
+ */
+promiser.use = function (engine) {
+  return assignPromiseEngine(engine);
+};
+
+/**
  * Wraps a callback-using function such that it uses a promise instead.
  *
  * @param  {Function} asyncWithCallback  The function to wrap.
@@ -25,7 +39,7 @@ function promiser(state) {
 promiser.wrap = function (fn) {
   return function () {
     const args = Array.prototype.slice.call(arguments || []);
-    return new Promise((resolve, reject) => {
+    return createNativePromise((resolve, reject) => {
       const callback = function (err, success) {
         err ? reject(err) : resolve(success);
       };
@@ -45,7 +59,7 @@ promiser.wrap = function (fn) {
  * @return {Promise}
  */
 promiser.recur = function (fn) {
-  return new Promise((resolve, reject) => {
+  return createNativePromise((resolve, reject) => {
     const next = () => fn(next, resolve, reject);
     next();
   });
@@ -63,33 +77,14 @@ promiser.recur = function (fn) {
  * @return {Promise} Resolves/rejects in accordance with the argument promise.
  */
 promiser.hook = function (promise, hook) {
-  return new Promise((resolve, reject) => {
+  return createNativePromise((resolve, reject) => {
     promise.then(result => {
       const next = () => resolve(result);
       hook(result, next);
-      resolve(result);
     })
     .catch(err => {
       reject(err);
     })
-  });
-}
-
-/**
- * Functions kind of like promise middle-ware.
- * When a promise resolves, add its result to a provided object as a property
- * under a provided name. Then complete the resolution.
- *
- * @param {Object}  obj      Will take a new property/have a property modified.
- * @param {String}  name     The name of the property to add/modify.
- * @param {Promise} promise  The promise whose resolved value will go on the object.
- *
- * @return {Promise} Resolves/rejects in accordance with the argument promise.
- */
-promiser.addProp = function (obj, name, promise) {
-  return promiser.hook(promise, (result, next) => {
-    obj[name] = result;
-    next()
   });
 };
 

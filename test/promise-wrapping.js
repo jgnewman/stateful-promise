@@ -1,6 +1,7 @@
 import assert from 'assert';
 import fs from 'fs';
 import promiser from '../bin/index';
+import BluebirdPromise from 'bluebird';
 
 describe('Promise Wrapping', function () {
 
@@ -94,70 +95,6 @@ describe('Promise Wrapping', function () {
     })
   });
 
-  it('should add properties to objects in promise fashion', function (done) {
-    this.timeout(1000);
-
-    function basicPromise() {
-      return new Promise(resolve => {
-        setTimeout(() => {
-          resolve('bar');
-        }, 10);
-      });
-    }
-
-    promiser({
-      foo: [{}, {}, {}]
-    })
-
-    .then(state => {
-      return state.forEach('foo', obj => {
-        return promiser.addProp(obj, 'name', basicPromise())
-      });
-    })
-
-    .then(state => {
-      assert.equal(state.foo[0].name, 'bar');
-      assert.equal(state.foo[1].name, 'bar');
-      assert.equal(state.foo[2].name, 'bar');
-      done();
-    })
-
-  });
-
-  it('should add properties to objects cooperatively with map', function (done) {
-    this.timeout(1000);
-
-    function basicPromise() {
-      return new Promise(resolve => {
-        setTimeout(() => {
-          resolve({name: 'baz'});
-        }, 10);
-      });
-    }
-
-    promiser({
-      foo: [{}, {}, {}],
-      bar: [{}, {}, {}]
-    })
-
-    .then(state => {
-      return state.forEach('foo', (obj, index) => {
-        return promiser.addProp(state.bar[index], 'name', basicPromise())
-      }, { map: true });
-    })
-
-    .then(state => {
-      assert.deepEqual(state.foo[0], {name: 'baz'});
-      assert.deepEqual(state.foo[1], {name: 'baz'});
-      assert.deepEqual(state.foo[2], {name: 'baz'});
-      assert.deepEqual(state.bar[0].name, {name: 'baz'});
-      assert.deepEqual(state.bar[1].name, {name: 'baz'});
-      assert.deepEqual(state.bar[2].name, {name: 'baz'});
-      done();
-    })
-
-  });
-
   it('should create a recursive promise', function (done) {
     this.timeout(1000);
 
@@ -181,6 +118,23 @@ describe('Promise Wrapping', function () {
     .then(state => {
       assert.equal(inc, 3);
       assert.equal(state.foo, 'foo');
+      done();
+    })
+
+  });
+
+  it('should work with other promise engines', function (done) {
+    promiser.use(BluebirdPromise);
+
+    const wrapped = promiser.wrap(fs.readdir);
+
+    promiser()
+    .then(state => {
+      return state.set('files', wrapped(__dirname))
+    })
+    .then(state => {
+      assert.ok(state.files.length);
+      promiser.use(Promise);
       done();
     })
 
