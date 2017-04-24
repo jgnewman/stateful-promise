@@ -71,18 +71,10 @@ describe('Promise Wrapping', function () {
 
     let shouldBeFoo = null;
 
-    function basicPromise() {
-      return new Promise(resolve => {
-        setTimeout(() => {
-          resolve('foo');
-        }, 10);
-      });
-    }
-
     promiser()
 
     .then(state => {
-      return state.set('foo', promiser.hook(basicPromise(), (result, next) => {
+      return state.set('foo', promiser.hook(Promise.resolve('foo'), (result, next) => {
         shouldBeFoo = result;
         next();
       }));

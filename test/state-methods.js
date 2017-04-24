@@ -9,19 +9,11 @@ describe('State Methods', function () {
 
     let initialState;
 
-    function prom() {
-      return new Promise(resolve => {
-        setTimeout(() => {
-          resolve('foo');
-        }, 10)
-      })
-    }
-
     promiser()
 
     .then(state => {
       initialState = state;
-      return state.handle(prom());
+      return state.handle(Promise.resolve('foo'));
     })
 
     .then(state => {
@@ -37,19 +29,11 @@ describe('State Methods', function () {
     let initialState;
     let shouldNotBeTrue = false;
 
-    function prom() {
-      return new Promise((resolve, reject) => {
-        setTimeout(() => {
-          reject('foo');
-        }, 10)
-      })
-    }
-
     promiser()
 
     .then(state => {
       initialState = state;
-      return state.handle(prom(), 'bar');
+      return state.handle(Promise.reject('foo'), 'bar');
     })
 
     .then(state => {
@@ -67,9 +51,7 @@ describe('State Methods', function () {
   it('should add a property to the state', function (done) {
     const promise = promiser();
     promise.then(state => {
-      return state.set('foo', new Promise(resolve => {
-        resolve('bar');
-      }));
+      return state.set('foo', Promise.resolve('bar'));
     })
     .then(state => {
       assert.equal(state.foo, 'bar');
@@ -80,9 +62,7 @@ describe('State Methods', function () {
   it('should update a property on the state', function (done) {
     const promise = promiser({ foo: 'bar' });
     promise.then(state => {
-      return state.set('foo', new Promise(resolve => {
-        resolve('baz');
-      }));
+      return state.set('foo', Promise.resolve('baz'));
     })
     .then(state => {
       assert.equal(state.foo, 'baz');
@@ -97,7 +77,7 @@ describe('State Methods', function () {
       return state.set('foo', new Promise(resolve => {
         setTimeout(() => {
           resolve('bar');
-        }, 10)
+        }, 200)
       }));
     })
     .then(state => {
@@ -109,9 +89,7 @@ describe('State Methods', function () {
   it('should collect errors and pass them to a `catch` block', function (done) {
     const promise = promiser();
     promise.then(state => {
-      return state.set('foo', new Promise((resolve, reject) => {
-        reject('fail');
-      }));
+      return state.set('foo', Promise.reject('fail'));
     })
     .catch((state, ...errors) => {
       assert.equal(typeof state, 'object');
@@ -125,9 +103,7 @@ describe('State Methods', function () {
     let   firstCatchCalled = false;
 
     promise.then(state => {
-      return state.set('foo', new Promise((resolve, reject) => {
-        reject('fail');
-      }));
+      return state.set('foo', Promise.reject('fail'));
     })
     .catch(state => {
       firstCatchCalled = true;
@@ -195,9 +171,7 @@ describe('State Methods', function () {
   it('should override errors when told', function (done) {
     const promise = promiser();
     promise.then(state => {
-      return state.set('foo', new Promise((resolve, reject) => {
-        reject('fail');
-      }), 404);
+      return state.set('foo', Promise.reject('fail'), 404);
     })
     .catch((state, ...errors) => {
       assert.equal(errors[0], 404);
@@ -252,22 +226,14 @@ describe('State Methods', function () {
     let   inc     = 0;
 
     promise.then(state => {
-      return state.map('foo', (num, index) => {
-        return new Promise(resolve => {
-          resolve(num + 1);
-        });
-      });
+      return state.map('foo', (num, index) => Promise.resolve(num + 1));
     })
     .then(state => {
       assert.deepEqual(state.foo, [2, 3, 4]);
       return state;
     })
     .then(state => {
-      return state.map('foo', (num, index) => {
-        return new Promise(resolve => {
-          resolve(num + 1);
-        });
-      });
+      return state.map('foo', (num, index) => Promise.resolve(num + 1));
     })
     .then(state => {
       assert.deepEqual(state.foo, [3, 4, 5]);
@@ -278,11 +244,7 @@ describe('State Methods', function () {
   it('should collect errors from `forEach`', function (done) {
     const promise = promiser({ foo: [1, 2, 3] });
     promise.then(state => {
-      return state.forEach('foo', (num, index) => {
-        return new Promise((resolve, reject) => {
-          reject('fail');
-        });
-      });
+      return state.forEach('foo', (num, index) => Promise.reject('fail'));
     })
     .catch((state, ...errors) => {
       assert.equal(errors.length, 3);
@@ -294,11 +256,7 @@ describe('State Methods', function () {
   it('should override errors from `forEach`', function (done) {
     const promise = promiser({ foo: [1, 2, 3] });
     promise.then(state => {
-      return state.forEach('foo', (num, index) => {
-        return new Promise((resolve, reject) => {
-          reject('fail');
-        });
-      }, 404);
+      return state.forEach('foo', ((num, index) => Promise.reject('fail')), 404);
     })
     .catch((state, ...errors) => {
       assert.equal(errors[0], 404);
@@ -309,11 +267,7 @@ describe('State Methods', function () {
   it('should allow early bailing out from `forEachSync`', function (done) {
     const promise = promiser({ foo: [1, 2, 3] });
     promise.then(state => {
-      return state.forEachSync('foo', (num, index) => {
-        return new Promise((resolve, reject) => {
-          reject('fail');
-        });
-      });
+      return state.forEachSync('foo', (num, index) => Promise.reject('fail'));
     })
     .catch((state, ...errors) => {
       assert.equal(errors.length, 1); // Maybe change this to stop after the first rejection? Maybe as a setting?
@@ -325,11 +279,7 @@ describe('State Methods', function () {
   it('should allow early bailing out from `mapSync`', function (done) {
     const promise = promiser({ foo: [1, 2, 3] });
     promise.then(state => {
-      return state.mapSync('foo', (num, index) => {
-        return new Promise((resolve, reject) => {
-          reject('fail');
-        });
-      });
+      return state.mapSync('foo', (num, index) => Promise.reject('fail'));
     })
     .catch((state, ...errors) => {
       assert.equal(errors.length, 1); // Maybe change this to stop after the first rejection? Maybe as a setting?
@@ -340,17 +290,11 @@ describe('State Methods', function () {
 
   it('should be able to return something other than state from .map', function (done) {
 
-    function prom() {
-      return new Promise(resolve => {
-        resolve('baz');
-      })
-    }
-
     promiser({ foo: [{}, {}, {}] })
 
     .then(state => {
       return state.map('foo', obj => {
-        return state.setTo(obj, 'bar', prom()).then(() => obj)
+        return state.setTo(obj, 'bar', Promise.resolve('baz')).then(() => obj)
       })
     })
 
@@ -364,21 +308,13 @@ describe('State Methods', function () {
   it('should add properties to objects in promise fashion', function (done) {
     this.timeout(1000);
 
-    function basicPromise() {
-      return new Promise(resolve => {
-        setTimeout(() => {
-          resolve('bar');
-        }, 10);
-      });
-    }
-
     promiser({
       foo: [{}, {}, {}]
     })
 
     .then(state => {
       return state.forEach('foo', obj => {
-        return state.setTo(obj, 'name', basicPromise())
+        return state.setTo(obj, 'name', Promise.resolve('bar'))
       });
     })
 
@@ -398,7 +334,7 @@ describe('State Methods', function () {
     })
 
     .then(state => {
-      return state.setTo(state.foo, 3, new Promise(resolve => resolve(4)))
+      return state.setTo(state.foo, 3, Promise.resolve(4))
     })
 
     .then(state => {
@@ -416,7 +352,7 @@ describe('State Methods', function () {
     })
 
     .then(state => {
-      return state.pushTo(state.foo, new Promise(resolve => resolve(4)))
+      return state.pushTo(state.foo, Promise.resolve(4))
     })
 
     .then(state => {
@@ -433,7 +369,7 @@ describe('State Methods', function () {
     })
 
     .then(state => {
-      return state.unshiftTo(state.foo, new Promise(resolve => resolve(0)))
+      return state.unshiftTo(state.foo, Promise.resolve(0))
     })
 
     .then(state => {
@@ -450,7 +386,7 @@ describe('State Methods', function () {
     })
 
     .then(state => {
-      return state.push('foo', new Promise(resolve => resolve(4)))
+      return state.push('foo', Promise.resolve(4))
     })
 
     .then(state => {
@@ -467,7 +403,7 @@ describe('State Methods', function () {
     })
 
     .then(state => {
-      return state.unshift('foo', new Promise(resolve => resolve(0)))
+      return state.unshift('foo', Promise.resolve(0))
     })
 
     .then(state => {

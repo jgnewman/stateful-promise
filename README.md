@@ -156,20 +156,12 @@ Normally you'll only need 1 catch block per promise chain but you can chain mult
 The async/await spec is an exciting proposal for the ES2017 JavaScript implementation. If you're wondering whether or not stateful-promise works with async/await, you will be happy to know that it does. Here's a great example of how you would use it:
 
 ```javascript
-function resolveWith(val) {
-  return new Promise(resolve => {
-    setTimeout(() => {
-      resolve(val)l
-    }, 100);
-  });
-}
-
 async function doSomething() {
 
   const state = await promiser();
 
-  await state.set('foo', resolveWith('bar'));
-  await state.set('baz', resolveWith('quux'));
+  await state.set('foo', Promise.resolve('bar'));
+  await state.set('baz', Promise.resolve('quux'));
 
   console.log(state); // <- { foo: 'bar', baz: 'quux' }
 

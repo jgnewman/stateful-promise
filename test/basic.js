@@ -29,15 +29,16 @@ describe('Basic Functionality', function () {
   });
 
   it('should chain `then` functions when not returning a promise', function (done) {
-    const promise = promiser();
-    promise
-      .then(state => {
-        return undefined;
-      })
-      .then(state => {
-        assert.ok(state);
-        done();
-      });
+    promiser()
+
+    .then(state => {
+      return undefined;
+    })
+
+    .then(state => {
+      assert.ok(state);
+      done();
+    })
   });
 
   it('should work with other promise engines', function (done) {
@@ -54,13 +55,9 @@ describe('Basic Functionality', function () {
 
   async function asyncFun() {
 
-    function createPromise(val) {
-      return new Promise(resolve => resolve(val))
-    }
-
     const state = await promiser();
-    await state.set('foo', createPromise('bar'));
-    await state.set('baz', createPromise('quux'));
+    await state.set('foo', Promise.resolve('bar'));
+    await state.set('baz', Promise.resolve('quux'));
 
     assert.equal(state.foo, 'bar');
     assert.equal(state.baz, 'quux');
