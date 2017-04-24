@@ -88,4 +88,5 @@ promiser.hook = function (promise, hook) {
   });
 };
 
-export default promiser;
+// Make this thing _consistently_ available.
+module.exports = exports = promiser;

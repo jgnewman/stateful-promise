@@ -1,6 +1,6 @@
 {
   "name": "stateful-promise",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "A light wrapper around the native Promise implementation providing an updatable state available throughout the promise chain as well as useful iterative promise-based methods.",
   "main": "bin/index.js",
   "repository": "git@github.com:jgnewman/stateful-promise",
