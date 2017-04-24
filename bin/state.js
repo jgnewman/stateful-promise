@@ -52,7 +52,7 @@ var State = function () {
      * @param  {Promise} promise  The result of this promise becomes the new value.
      * @param  {Any}     err      Optional. The error to collect if the promise is rejected.
      *
-     * @return {Promise} Always resolves with this.
+     * @return {Promise} Resolves with the result of the original promise.
      */
 
   }, {
@@ -60,6 +60,7 @@ var State = function () {
     value: function setTo(obj, name, promise, err) {
       return (0, _utils.statifyPromise)(this, promise, err, function (result) {
         obj[name] = result;
+        return result;
       });
     }
 
@@ -76,7 +77,11 @@ var State = function () {
   }, {
     key: 'set',
     value: function set(prop, promise, err) {
-      return this.setTo(this, prop, promise, err);
+      var _this = this;
+
+      return (0, _utils.statifyPromise)(this, promise, err, function (result) {
+        _this[prop] = result;
+      });
     }
 
     /**
@@ -86,7 +91,7 @@ var State = function () {
      * @param  {Promise} promise  The result of this promise becomes the new value.
      * @param  {Any}     err      Optional. The error to collect if the promise is rejected.
      *
-     * @return {Promise} Always resolves with this.
+     * @return {Promise} Always resolves with the result of the original.
      */
 
   }, {
@@ -94,6 +99,7 @@ var State = function () {
     value: function pushTo(arr, promise, err) {
       return (0, _utils.statifyPromise)(this, promise, err, function (result) {
         arr.push(result);
+        return result;
       });
     }
 
@@ -110,7 +116,11 @@ var State = function () {
   }, {
     key: 'push',
     value: function push(prop, promise, err) {
-      return this.pushTo(this[prop], promise, err);
+      var _this2 = this;
+
+      return (0, _utils.statifyPromise)(this, promise, err, function (result) {
+        _this2[prop].push(result);
+      });
     }
 
     /**
@@ -120,7 +130,7 @@ var State = function () {
      * @param  {Promise} promise  The result of this promise becomes the new value.
      * @param  {Any}     err      Optional. The error to collect if the promise is rejected.
      *
-     * @return {Promise} Always resolves with this.
+     * @return {Promise} Always resolves with the result of the original promise.
      */
 
   }, {
@@ -128,6 +138,7 @@ var State = function () {
     value: function unshiftTo(arr, promise, err) {
       return (0, _utils.statifyPromise)(this, promise, err, function (result) {
         arr.unshift(result);
+        return result;
       });
     }
 
@@ -144,7 +155,11 @@ var State = function () {
   }, {
     key: 'unshift',
     value: function unshift(prop, promise, err) {
-      return this.unshiftTo(this[prop], promise, err);
+      var _this3 = this;
+
+      return (0, _utils.statifyPromise)(this, promise, err, function (result) {
+        _this3[prop].unshift(result);
+      });
     }
 
     /**
@@ -160,12 +175,12 @@ var State = function () {
   }, {
     key: 'rejectIf',
     value: function rejectIf(condition, err) {
-      var _this = this;
+      var _this4 = this;
 
       var hasErr = arguments.length > 1;
       return (0, _utils.createNativePromise)(function (resolve) {
-        !!condition && _this._errors.push(hasErr ? err : 'Condition failed.');
-        resolve(_this);
+        !!condition && _this4._errors.push(hasErr ? err : 'Condition failed.');
+        resolve(_this4);
       });
     }
 
@@ -183,7 +198,7 @@ var State = function () {
   }, {
     key: 'rejectIfAny',
     value: function rejectIfAny() {
-      var _this2 = this;
+      var _this5 = this;
 
       for (var _len = arguments.length, conditionArrays = Array(_len), _key = 0; _key < _len; _key++) {
         conditionArrays[_key] = arguments[_key];
@@ -193,11 +208,11 @@ var State = function () {
         conditionArrays.some(function (arr) {
           var hasErr = arr.length > 1;
           if (!!arr[0]) {
-            _this2._errors.push(hasErr ? arr[1] : 'Condition failed.');
+            _this5._errors.push(hasErr ? arr[1] : 'Condition failed.');
             return true;
           }
         });
-        resolve(_this2);
+        resolve(_this5);
       });
     }
 
@@ -241,16 +256,55 @@ var State = function () {
   }, {
     key: 'map',
     value: function map(prop, iterator, err) {
-      var _this3 = this;
+      return (0, _utils.promiseIteration)({
+        state: this,
+        arr: this[prop],
+        iterator: iterator,
+        err: err,
+        hook: function hook(collector) {
+          collector.collection[collector.index] = collector.result;
+        }
+      });
+    }
+
+    /**
+     * Asynchronously loops over each item in a state property with the purpose
+     * of filtering out unneeded items. It calls an iterator for each one that
+     * returns a promise. If the resolved value of an iterator promise is truthy,
+     * the corresponding item in an array will be kept. Otherwise it will be
+     * removed. Note that because this is async, the resulting array may not be
+     * in the original order.
+     *
+     * @param  {String}  prop      The name of the property to loop over.
+     * @param  {Promise} iterator  The iterator function, taking item and index.
+     *                             Be careful how you use index since this is async.
+     * @param  {Any}     err       Optional. The error to collect if any promise is rejected.
+     *
+     * @return {Promise} Always resolves with this.
+     */
+
+  }, {
+    key: 'filter',
+    value: function filter(prop, iterator, err) {
+      var _this6 = this;
 
       return (0, _utils.promiseIteration)({
         state: this,
         arr: this[prop],
         iterator: iterator,
         err: err,
-        hook: function hook(item, index, result, next) {
-          _this3[prop][index] = result;
-          next();
+        hook: function hook(collector) {
+          if (collector.isFirstResult) {
+            collector.newCollection = [];
+          }
+
+          if (collector.result) {
+            collector.newCollection.push(collector.item);
+          }
+
+          if (collector.isLastResult) {
+            _this6[prop] = collector.newCollection;
+          }
         }
       });
     }
@@ -301,17 +355,57 @@ var State = function () {
   }, {
     key: 'mapSync',
     value: function mapSync(prop, iterator, err, nobail) {
-      var _this4 = this;
-
       return (0, _utils.promiseIterationSync)({
         state: this,
         arr: this[prop],
         iterator: iterator,
         err: err,
         nobail: nobail,
-        hook: function hook(item, index, result, next) {
-          _this4[prop][index] = result;
-          next();
+        hook: function hook(collector) {
+          collector.collection[collector.index] = collector.result;
+        }
+      });
+    }
+
+    /**
+     * Synchronously loops over each item in a state property with the purpose
+     * of filtering out unneeded items. It calls an iterator for each one that
+     * returns a promise. If the resolved value of an iterator promise is truthy,
+     * the corresponding item in an array will be kept. Otherwise it will be
+     * removed. Using `filterSync` ensures that the array remains in the same order
+     * but it is much slower.
+     *
+     * @param  {String}  prop      The name of the property to loop over.
+     * @param  {Promise} iterator  The iterator function, taking item and index.
+     * @param  {Any}     err       Optional. The error to collect if any promise is rejected.
+     * @param  {Boolean} nobail    Optional. If true, we won't bail out after the first rejection.
+     *
+     * @return {Promise} Always resolves with this.
+     */
+
+  }, {
+    key: 'filterSync',
+    value: function filterSync(prop, iterator, err, nobail) {
+      var _this7 = this;
+
+      return (0, _utils.promiseIteration)({
+        state: this,
+        arr: this[prop],
+        iterator: iterator,
+        err: err,
+        nobail: nobail,
+        hook: function hook(collector) {
+          if (collector.isFirstResult) {
+            collector.newCollection = [];
+          }
+
+          if (collector.result) {
+            collector.newCollection.push(collector.item);
+          }
+
+          if (collector.isLastResult) {
+            _this7[prop] = collector.newCollection;
+          }
         }
       });
     }
@@ -329,14 +423,14 @@ var State = function () {
   }, {
     key: 'toObject',
     value: function toObject(settings) {
-      var _this5 = this;
+      var _this8 = this;
 
       settings = settings || {};
       var output = {};
       Object.keys(this).forEach(function (key) {
         if (key !== '_errors') {
           if (!settings.exclude || settings.exclude.indexOf(key) === -1) {
-            output[key] = _this5[key];
+            output[key] = _this8[key];
           }
         }
       });
@@ -357,7 +451,7 @@ var State = function () {
   }, {
     key: 'toPartialObject',
     value: function toPartialObject() {
-      var _this6 = this;
+      var _this9 = this;
 
       for (var _len2 = arguments.length, keys = Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
         keys[_key2] = arguments[_key2];
@@ -366,7 +460,7 @@ var State = function () {
       var output = {};
       Object.keys(this).forEach(function (key) {
         if (keys.indexOf(key) > -1) {
-          output[key] = _this6[key];
+          output[key] = _this9[key];
         }
       });
       return output;

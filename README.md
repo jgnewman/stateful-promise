@@ -75,7 +75,7 @@ promiser.use(Promise);
 
 ## Usage
 
-To create a stateful-promise, you'll need to start with a "promiser". A promiser will create a state object for you and expose chainable `then` and `catch` methods. These are native promise methods but the promiser sets them up in such a way that every method in the chain will always receive the state itself as an argument, no matter what a previous method may have returned. For example...
+To create a stateful-promise, you'll need to start with a "promiser". A promiser will create a state object for you and expose chainable `then` and `catch` methods. These work just like native promise methods but the promiser sets them up in such a way that every method in the chain will always receive the state itself as an argument, no matter what a previous method may have returned. For example...
 
 ```javascript
 promiser({ hello: 'hello', world: 'world' })
@@ -366,7 +366,7 @@ Uses a promise to add/modify a property on the state.
 - `promise` {Promise} The result of this promise becomes the new property value.
 - `err` {Any} _Optional._ If provided, will override the error resulting from a promise rejection.
 
-Returns a Promise.
+Returns a Promise that resolves with the state.
 
 ```javascript
 promiser()
@@ -393,7 +393,7 @@ Uses a promise to add/modify a property on some object, not necessarily the stat
 - `promise` {Promise} The result of this promise becomes the new property value.
 - `err` {Any} _Optional._ If provided, will override the error resulting from a promise rejection.
 
-Returns a Promise.
+Returns a Promise that resolves with the result of the original promise passed in.
 
 ```javascript
 promiser()
@@ -420,7 +420,7 @@ Uses a promise to push an item to an array on the state.
 - `promise` {Promise} The result of this promise becomes the new array value.
 - `err` {Any} _Optional._ If provided, will override the error resulting from a promise rejection.
 
-Returns a Promise.
+Returns a Promise that resolves with the state.
 
 ```javascript
 promiser({ foo: [1, 2, 3] })
@@ -442,7 +442,7 @@ Uses a promise to push an item to an array.
 - `promise` {Promise} The result of this promise becomes the new array value.
 - `err` {Any} _Optional._ If provided, will override the error resulting from a promise rejection.
 
-Returns a Promise.
+Returns a Promise that resolves with the result of the original promise passed in.
 
 ```javascript
 promiser({ foo: [1, 2, 3] })
@@ -464,7 +464,7 @@ Uses a promise to unshift an item to an array on the state.
 - `promise` {Promise} The result of this promise becomes the new array value.
 - `err` {Any} _Optional._ If provided, will override the error resulting from a promise rejection.
 
-Returns a Promise.
+Returns a Promise that resolves with the state.
 
 ```javascript
 promiser({ foo: [1, 2, 3] })
@@ -486,7 +486,7 @@ Uses a promise to unshift an item to an array.
 - `promise` {Promise} The result of this promise becomes the new array value.
 - `err` {Any} _Optional._ If provided, will override the error resulting from a promise rejection.
 
-Returns a Promise.
+Returns a Promise that resolves with the result of the original promise passed in.
 
 ```javascript
 promiser({ foo: [1, 2, 3] })
@@ -512,7 +512,7 @@ It is expected that each call to the iterator function will return a Promise. Th
 
 _Note that because the whole thing resolves only after all iterations are complete, this method has the potential to collect multiple errors. All of these will be delivered as part of the spread passed to a catch block._
 
-Returns a Promise.
+Returns a Promise that resolves with the state.
 
 ```javascript
 let inc = 0;
@@ -537,14 +537,14 @@ promiser({ foo: [1, 2, 3] })
 
 Loops over each item in an array property on the state and calls a function for each one. This function takes `item` and `index` as you'd expect and each iteration runs **only after** the previous iteration has resolved.
 
-It is expected that each call to the iterator function will return a Promise. The overarching `forEach` function will resolve once all of the iterator Promises have resolved.
+It is expected that each call to the iterator function will return a Promise. The overarching `forEachSync` function will resolve once all of the iterator Promises have resolved.
 
 - `name` {String} The name of the array property on the state.
 - `iterator` {Function} The function to call for each item in the array.
 - `err` {Any} _Optional._ If provided, will override the error resulting from a promise rejection.
 - `nobail` {Boolean} _Optional._ If true, the function will not bail out after the first iteration but will instead wait for all iterations to complete before rejecting.
 
-Returns a Promise.
+Returns a Promise that resolves with the state.
 
 ```javascript
 let inc = 0;
@@ -579,7 +579,7 @@ _Note that because the whole thing resolves only after all iterations are comple
 
 _Note that unlike the native `Array#map` method, `State#map` does not return a new array but instead modifies the original array._
 
-Returns a Promise.
+Returns a Promise that resolves with the state.
 
 ```javascript
 promiser({ foo: [1, 2, 3] })
@@ -601,7 +601,7 @@ promiser({ foo: [1, 2, 3] })
 
 Loops over each item in an array property on the state and calls a function for each one. This function takes `item` and `index` as you'd expect and each iteration runs **only after** the previous iteration has resolved.
 
-It is expected that each call to the iterator function will return a Promise. The result of each of these promises will replace the corresponding value in the array. The overarching `map` function will resolve once all of the iterator Promises have resolved.
+It is expected that each call to the iterator function will return a Promise. The result of each of these promises will replace the corresponding value in the array. The overarching `mapSync` function will resolve once all of the iterator Promises have resolved.
 
 - `name` {String} The name of the array property on the state.
 - `iterator` {Function} The function to call for each item in the array.
@@ -610,7 +610,7 @@ It is expected that each call to the iterator function will return a Promise. Th
 
 _Note that unlike the native `Array#map` method, `State#mapSync` does not return a new array but instead modifies the original array._
 
-Returns a Promise.
+Returns a Promise that resolves with the state.
 
 ```javascript
 promiser({ foo: [1, 2, 3] })
@@ -628,6 +628,67 @@ promiser({ foo: [1, 2, 3] })
 })
 ```
 
+#### `State#filter(name, iterator [, err])`
+
+Loops over each item in an array property with the purpose of filtering out unneeded items. It calls an iterator function for each item. This function takes `item` and `index` as you'd expect but **be careful how you use `index` because this is an asynchronous function** and there is no guarantee that things are actually executing entirely in order.
+
+It is expected that each call to the iterator function will return a Promise. If the result of one of these promises is truthy, the corresponding array item will be kept. If not, it will be removed. The overarching `filter` function will resolve once all of the iterator Promises have resolved.
+
+- `name` {String} The name of the array property on the state.
+- `iterator` {Function} The function to call for each item in the array.
+- `err` {Any} _Optional._ If provided, will override the error resulting from a promise rejection.
+
+_Note that because the whole thing resolves only after all iterations are complete, this method has the potential to collect multiple errors. All of these will be delivered as part of the spread passed to a catch block._
+
+_Note that because this function is asynchronous, the resulting filtered array may not be in the same order that the original array was in._
+
+Returns a Promise that resolves with the state.
+
+```javascript
+promiser({ foo: [1, 2, 3] })
+
+.then(state => {
+  return state.filter('foo', (item, index) => {
+    return new Promise(resolve => {
+      resolve(item !== 2);
+    })
+  })
+})
+
+.then(state => {
+  console.log(state.foo) // <- [1, 3]
+})
+```
+
+#### `State#filterSync(name, iterator [, err, nobail])`
+
+Loops over each item in an array property with the purpose of filtering out unneeded items. It calls an iterator function for each item. This function takes `item` and `index` as you'd expect and each iteration runs **only after** the previous iteration has resolved.
+
+It is expected that each call to the iterator function will return a Promise. If the result of one of these promises is truthy, the corresponding array item will be kept. If not, it will be removed. The overarching `filterSync` function will resolve once all of the iterator Promises have resolved.
+
+- `name` {String} The name of the array property on the state.
+- `iterator` {Function} The function to call for each item in the array.
+- `err` {Any} _Optional._ If provided, will override the error resulting from a promise rejection.
+- `nobail` {Boolean} _Optional._ If true, the function will not bail out after the first iteration but will instead wait for all iterations to complete before rejecting.
+
+Returns a Promise that resolves with the state.
+
+```javascript
+promiser({ foo: [1, 2, 3] })
+
+.then(state => {
+  return state.filterSync('foo', (item, index) => {
+    return new Promise(resolve => {
+      resolve(item !== 2);
+    })
+  })
+})
+
+.then(state => {
+  console.log(state.foo) // <- [1, 3]
+})
+```
+
 #### `State#rejectIf(condition [, err])`
 
 Manually reject a promise chain under some condition.
@@ -635,7 +696,7 @@ Manually reject a promise chain under some condition.
 - `condition` {Boolean} The chain will reject if this boolean is true.
 - `err` {Any} _Optional._ The error message passed to the rejection.
 
-Returns a Promise.
+Returns a Promise that resolves with the state.
 
 ```javascript
 promiser({ foo: true })
@@ -655,7 +716,7 @@ Manually reject a promise under one of many possible conditions.
 
 - `conditionArrays` {Arrays} Where item 0 is a condition and item 1 is an associated error message.
 
-Returns a Promise.
+Returns a Promise that resolves with the state.
 
 ```javascript
 promiser({ num: 20 })
@@ -679,7 +740,7 @@ Allows you to pass a normal promise through in a way that takes full advantage o
 - `promise` {Promise} The result of this promise is not trapped for you anywhere.
 - `err` {Any} _Optional._ If provided, will override the error resulting from a promise rejection.
 
-Returns a Promise.
+Returns a Promise that resolves with the state.
 
 ```javascript
 function prom(value) {
@@ -702,3 +763,78 @@ promiser()
   console.log(err) // <- 'failed'
 })
 ```
+
+## Food for thought
+
+The `map` and `filter` functions (as well as their synchronous counterparts) are convenient and useful but you have to keep in mind what's being "returned" from each of their iterators and make sure you're returning the right thing in order for them to work correctly. This isn't always fully intuitive when we're dealing with promises.
+
+Here's a great example of a mistake that's easy to make:
+
+```javascript
+promiser()
+
+// Grab some user records from the database
+.then(state => {
+  return state.set('users', database.getSomeUsers())
+})
+
+// Create a new 'docs' property on each user object as the
+// result of fetching all of that user's documents from the database.
+.then(state => {
+  return state.map('users', user => {
+    return state.setTo(user, 'docs', database.getDocsForUser(user.id))
+  })
+})
+
+// Woops! We ended up turning our users array into an array of docs.
+.then(state => {
+  console.log(state.users) // <- [[docs], [docs], [docs], etc...]
+})
+```
+
+This happened because we haven't paid close attention to how the `setTo` function resolves. This function resolves not with the iterator item, but with the result of it's promise argument. Because `map` replaces array items with the result of its iterator calls, we need to make sure those calls are returning the updated `user` object, not the documents array. To fix it, we can do this:
+
+```javascript
+// Create a new 'docs' property for each user object as the
+// result of fetching all of that user's documents from the database.
+.then(state => {
+  return state.map('users', user => {
+    return state.setTo(user, 'docs', database.getDocsForUser(user.id)).then(() => user);
+  })
+})
+```
+
+Here, we've trapped the resolution of the `setTo` function and re-routed it to return the actual `user` object. In this way, the iterator function will resolve with the updated user object, rather than the "docs" array.
+
+The `filter` function should be handled carefully as well. Here's an example of how to use it correctly:
+
+```javascript
+promiser()
+
+// Grab some user records from the database
+.then(state => {
+  return state.set('users', database.getSomeUsers())
+})
+
+// Create a new 'docs' property for each user object as the
+// result of fetching all of that user's documents from the database.
+// But also filter out any users who don't have documents.
+.then(state => {
+  return state.filter('users', user => {
+    return state.setTo(user, 'docs', database.getDocsForUser(user.id))
+                .then(() => !!user.docs.length);
+  })
+});
+```
+
+In this illustration we've skipped over the mistake and shown what needs to happen in order for this function to behave as expected. Because `filter` will keep an array item if its iterator promise resolves truthily and remove the item if it does not, we need to re-route the result of our `setTo` call to return a boolean. This will allow `filter` to determine whether or not to keep the associated item in the array.
+
+If you'd like an easy way to remember how each of the state methods resolves, think of it like this: All state methods resolve with the state _unless_ the name of the method has the suffix "To" (for example `setTo`, `pushTo`, etc). In these cases, the method always resolves with the result of its promise argument.
+
+And that's about it. **Happy promising!**
+
+# Contributing
+
+Stateful-promise runs on Yarn. Just clone it from [the Github repo](https://github.com/jgnewman/stateful-promise), run `$ yarn` to install the development dependencies, and you're ready to go.
+
+The "build" and "test" scripts are described in `package.json` as you'd expect and they use Gulp to put everything together. Source code is in the "src" directory and compiled output is in the "bin" directory.

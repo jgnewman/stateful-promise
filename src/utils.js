@@ -84,16 +84,17 @@ export function executeChain(statefulPromise, queue, queueIsCatchers) {
 export function statifyPromise(state, promise, err, resolveHook) {
   return createNativePromise(resolve => {
     let didResolve = false;
+    let resolveWith;
 
     const next = () => {
       if (!didResolve) {
         didResolve = true;
-        resolve(state);
+        resolve(resolveWith || state);
       }
     }
 
     promise.then(result => {
-      resolveHook && resolveHook(result);
+      resolveHook && (resolveWith = resolveHook(result));
       next();
     })
 
@@ -121,28 +122,36 @@ export function statifyPromise(state, promise, err, resolveHook) {
 export function promiseIteration(settings) {
   return createNativePromise((resolve, reject) => {
     let inc = 0;
+    const collector = { collection: settings.arr };
 
     const execFn = (item, index) => {
       const promise = settings.iterator(item, index);
       let   didInc  = false;
 
-      const next = () => {
+      const next = (didResolve, result) => {
         if (!didInc) {
           didInc = true;
           inc += 1;
+          if (didResolve && settings.hook) {
+            collector.item = item;
+            collector.index = index;
+            collector.result = result;
+            collector.isFirstResult = inc === 1;
+            collector.isLastResult = inc === settings.arr.length;
+            settings.hook(collector);
+          }
           inc === settings.arr.length && resolve(settings.state);
         }
       }
 
+      // When the promise resolves, run a hook if we have one.
       promise.then(result => {
-        // Hook takes item, index, result and next()
-        settings.hook ? settings.hook(item, index, result, () => next())
-                      : next();
+        next(true, result);
       })
 
       .catch(error => {
         settings.state._errors.push(settings.err || error);
-        next();
+        next(false);
       });
     };
 
@@ -171,16 +180,28 @@ export function promiseIteration(settings) {
  */
 export function promiseIterationSync(settings) {
   return createNativePromise((resolve, reject) => {
+    const collector = { collection: settings.arr };
 
     const runLoop = (array, index) => {
       if (array.length) {
         let didAdvance = false;
-        const promise = settings.iterator(array[0], index);
+        const item = array[0];
+        const promise = settings.iterator(item, index);
 
-        const next = (didReject) => {
+        const next = (didResolve, result) => {
           if (!didAdvance) {
             didAdvance = true;
-            if (didReject && !settings.nobail) {
+
+            if (didResolve && settings.hook) {
+              collector.item = item;
+              collector.index = index;
+              collector.result = result;
+              collector.isFirstResult = index === 0;
+              collector.isLastResult = index === settings.arr.length - 1;
+              settings.hook(collector);
+            }
+
+            if (!didResolve && !settings.nobail) {
               resolve(settings.state);
             } else {
               runLoop(array.slice(1), index + 1);
@@ -188,15 +209,14 @@ export function promiseIterationSync(settings) {
           }
         };
 
+        // When the promise resolves, run a hook if we have one.
         promise.then(result => {
-          // Hook takes item, index, result and next()
-          settings.hook ? settings.hook(item, index, result, () => next())
-                        : next();
+          next(true, result);
         })
 
         .catch(error => {
           settings.state._errors.push(settings.err || error);
-          next(true);
+          next(false);
         });
 
       } else {

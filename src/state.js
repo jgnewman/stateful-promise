@@ -41,11 +41,12 @@ class State {
    * @param  {Promise} promise  The result of this promise becomes the new value.
    * @param  {Any}     err      Optional. The error to collect if the promise is rejected.
    *
-   * @return {Promise} Always resolves with this.
+   * @return {Promise} Resolves with the result of the original promise.
    */
   setTo(obj, name, promise, err) {
     return statifyPromise(this, promise, err, result => {
       obj[name] = result;
+      return result;
     });
   }
 
@@ -59,7 +60,9 @@ class State {
    * @return {Promise} Always resolves with this.
    */
   set(prop, promise, err) {
-    return this.setTo(this, prop, promise, err);
+    return statifyPromise(this, promise, err, result => {
+      this[prop] = result;
+    });
   }
 
   /**
@@ -69,11 +72,12 @@ class State {
    * @param  {Promise} promise  The result of this promise becomes the new value.
    * @param  {Any}     err      Optional. The error to collect if the promise is rejected.
    *
-   * @return {Promise} Always resolves with this.
+   * @return {Promise} Always resolves with the result of the original.
    */
   pushTo(arr, promise, err) {
     return statifyPromise(this, promise, err, result => {
       arr.push(result);
+      return result;
     });
   }
 
@@ -87,7 +91,9 @@ class State {
    * @return {Promise} Always resolves with this.
    */
   push(prop, promise, err) {
-    return this.pushTo(this[prop], promise, err);
+    return statifyPromise(this, promise, err, result => {
+      this[prop].push(result);
+    });
   }
 
   /**
@@ -97,11 +103,12 @@ class State {
    * @param  {Promise} promise  The result of this promise becomes the new value.
    * @param  {Any}     err      Optional. The error to collect if the promise is rejected.
    *
-   * @return {Promise} Always resolves with this.
+   * @return {Promise} Always resolves with the result of the original promise.
    */
   unshiftTo(arr, promise, err) {
     return statifyPromise(this, promise, err, result => {
       arr.unshift(result);
+      return result;
     });
   }
 
@@ -115,7 +122,9 @@ class State {
    * @return {Promise} Always resolves with this.
    */
   unshift(prop, promise, err) {
-    return this.unshiftTo(this[prop], promise, err);
+    return statifyPromise(this, promise, err, result => {
+      this[prop].unshift(result);
+    });
   }
 
   /**
@@ -197,9 +206,45 @@ class State {
       arr: this[prop],
       iterator: iterator,
       err: err,
-      hook: (item, index, result, next) => {
-        this[prop][index] = result;
-        next();
+      hook: (collector) => {
+        collector.collection[collector.index] = collector.result;
+      }
+    });
+  }
+
+  /**
+   * Asynchronously loops over each item in a state property with the purpose
+   * of filtering out unneeded items. It calls an iterator for each one that
+   * returns a promise. If the resolved value of an iterator promise is truthy,
+   * the corresponding item in an array will be kept. Otherwise it will be
+   * removed. Note that because this is async, the resulting array may not be
+   * in the original order.
+   *
+   * @param  {String}  prop      The name of the property to loop over.
+   * @param  {Promise} iterator  The iterator function, taking item and index.
+   *                             Be careful how you use index since this is async.
+   * @param  {Any}     err       Optional. The error to collect if any promise is rejected.
+   *
+   * @return {Promise} Always resolves with this.
+   */
+  filter(prop, iterator, err) {
+    return promiseIteration({
+      state: this,
+      arr: this[prop],
+      iterator: iterator,
+      err: err,
+      hook: (collector) => {
+        if (collector.isFirstResult) {
+          collector.newCollection = [];
+        }
+
+        if (collector.result) {
+          collector.newCollection.push(collector.item)
+        }
+
+        if (collector.isLastResult) {
+          this[prop] = collector.newCollection;
+        }
       }
     });
   }
@@ -250,9 +295,46 @@ class State {
       iterator: iterator,
       err: err,
       nobail: nobail,
-      hook: (item, index, result, next) => {
-        this[prop][index] = result;
-        next();
+      hook: (collector) => {
+        collector.collection[collector.index] = collector.result;
+      }
+    });
+  }
+
+  /**
+   * Synchronously loops over each item in a state property with the purpose
+   * of filtering out unneeded items. It calls an iterator for each one that
+   * returns a promise. If the resolved value of an iterator promise is truthy,
+   * the corresponding item in an array will be kept. Otherwise it will be
+   * removed. Using `filterSync` ensures that the array remains in the same order
+   * but it is much slower.
+   *
+   * @param  {String}  prop      The name of the property to loop over.
+   * @param  {Promise} iterator  The iterator function, taking item and index.
+   * @param  {Any}     err       Optional. The error to collect if any promise is rejected.
+   * @param  {Boolean} nobail    Optional. If true, we won't bail out after the first rejection.
+   *
+   * @return {Promise} Always resolves with this.
+   */
+  filterSync(prop, iterator, err, nobail) {
+    return promiseIteration({
+      state: this,
+      arr: this[prop],
+      iterator: iterator,
+      err: err,
+      nobail: nobail,
+      hook: (collector) => {
+        if (collector.isFirstResult) {
+          collector.newCollection = [];
+        }
+
+        if (collector.result) {
+          collector.newCollection.push(collector.item)
+        }
+
+        if (collector.isLastResult) {
+          this[prop] = collector.newCollection;
+        }
       }
     });
   }

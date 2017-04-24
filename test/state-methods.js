@@ -338,6 +338,29 @@ describe('State Methods', function () {
     });
   });
 
+  it('should be able to return something other than state from .map', function (done) {
+
+    function prom() {
+      return new Promise(resolve => {
+        resolve('baz');
+      })
+    }
+
+    promiser({ foo: [{}, {}, {}] })
+
+    .then(state => {
+      return state.map('foo', obj => {
+        return state.setTo(obj, 'bar', prom()).then(() => obj)
+      })
+    })
+
+    .then(state => {
+      assert.deepEqual(state.foo, [{bar: 'baz'}, {bar: 'baz'}, {bar: 'baz'}]);
+      done();
+    })
+
+  });
+
   it('should add properties to objects in promise fashion', function (done) {
     this.timeout(1000);
 
@@ -454,17 +477,57 @@ describe('State Methods', function () {
 
   });
 
+  it('should filter an array', function (done) {
 
+    let vals = [1, 100, 1];
 
+    function prom() {
+      return new Promise(resolve => {
+        const val = vals.shift();
+        resolve(val);
+      })
+    }
 
+    promiser({ foo: [{}, {}, {}] })
 
+    .then(state => {
+      return state.filter('foo', obj => {
+        return state.setTo(obj, 'bar', prom()).then(result => result < 10)
+      })
+    })
 
+    .then(state => {
+      assert.deepEqual(state.foo, [{bar: 1}, {bar: 1}]);
+      done();
+    })
 
+  });
 
+  it('should synchrounouly filter an array', function (done) {
 
+    let vals = [1, 100, 1];
 
+    function prom() {
+      return new Promise(resolve => {
+        const val = vals.shift();
+        resolve(val);
+      })
+    }
 
+    promiser({ foo: [{}, {}, {}] })
 
+    .then(state => {
+      return state.filterSync('foo', obj => {
+        return state.setTo(obj, 'bar', prom()).then(result => result < 10)
+      })
+    })
+
+    .then(state => {
+      assert.deepEqual(state.foo, [{bar: 1}, {bar: 1}]);
+      done();
+    })
+
+  });
 
   it('should allow manual rejections by condition', function (done) {
     const promise = promiser();

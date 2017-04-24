@@ -95,16 +95,17 @@ function executeChain(statefulPromise, queue, queueIsCatchers) {
 function statifyPromise(state, promise, err, resolveHook) {
   return createNativePromise(function (resolve) {
     var didResolve = false;
+    var resolveWith = void 0;
 
     var next = function next() {
       if (!didResolve) {
         didResolve = true;
-        resolve(state);
+        resolve(resolveWith || state);
       }
     };
 
     promise.then(function (result) {
-      resolveHook && resolveHook(result);
+      resolveHook && (resolveWith = resolveHook(result));
       next();
     }).catch(function (error) {
       state._errors.push(err || error);
@@ -130,27 +131,34 @@ function statifyPromise(state, promise, err, resolveHook) {
 function promiseIteration(settings) {
   return createNativePromise(function (resolve, reject) {
     var inc = 0;
+    var collector = { collection: settings.arr };
 
     var execFn = function execFn(item, index) {
       var promise = settings.iterator(item, index);
       var didInc = false;
 
-      var next = function next() {
+      var next = function next(didResolve, result) {
         if (!didInc) {
           didInc = true;
           inc += 1;
+          if (didResolve && settings.hook) {
+            collector.item = item;
+            collector.index = index;
+            collector.result = result;
+            collector.isFirstResult = inc === 1;
+            collector.isLastResult = inc === settings.arr.length;
+            settings.hook(collector);
+          }
           inc === settings.arr.length && resolve(settings.state);
         }
       };
 
+      // When the promise resolves, run a hook if we have one.
       promise.then(function (result) {
-        // Hook takes item, index, result and next()
-        settings.hook ? settings.hook(item, index, result, function () {
-          return next();
-        }) : next();
+        next(true, result);
       }).catch(function (error) {
         settings.state._errors.push(settings.err || error);
-        next();
+        next(false);
       });
     };
 
@@ -179,16 +187,28 @@ function promiseIteration(settings) {
  */
 function promiseIterationSync(settings) {
   return createNativePromise(function (resolve, reject) {
+    var collector = { collection: settings.arr };
 
     var runLoop = function runLoop(array, index) {
       if (array.length) {
         var didAdvance = false;
-        var promise = settings.iterator(array[0], index);
+        var item = array[0];
+        var promise = settings.iterator(item, index);
 
-        var next = function next(didReject) {
+        var next = function next(didResolve, result) {
           if (!didAdvance) {
             didAdvance = true;
-            if (didReject && !settings.nobail) {
+
+            if (didResolve && settings.hook) {
+              collector.item = item;
+              collector.index = index;
+              collector.result = result;
+              collector.isFirstResult = index === 0;
+              collector.isLastResult = index === settings.arr.length - 1;
+              settings.hook(collector);
+            }
+
+            if (!didResolve && !settings.nobail) {
               resolve(settings.state);
             } else {
               runLoop(array.slice(1), index + 1);
@@ -196,14 +216,12 @@ function promiseIterationSync(settings) {
           }
         };
 
+        // When the promise resolves, run a hook if we have one.
         promise.then(function (result) {
-          // Hook takes item, index, result and next()
-          settings.hook ? settings.hook(item, index, result, function () {
-            return next();
-          }) : next();
+          next(true, result);
         }).catch(function (error) {
           settings.state._errors.push(settings.err || error);
-          next(true);
+          next(false);
         });
       } else {
         resolve(settings.state);
