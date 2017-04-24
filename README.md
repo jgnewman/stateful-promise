@@ -151,6 +151,69 @@ So those are the basics. Obviously there's a lot of other features that make sta
 
 Normally you'll only need 1 catch block per promise chain but you can chain multiple catch blocks if you need to for those rarer occasions.
 
+## Usage with async/await
+
+The async/await spec is an exciting proposal for the ES2017 JavaScript implementation. If you're wondering whether or not stateful-promise works with async/await, you will be happy to know that it does. Here's a great example of how you would use it:
+
+```javascript
+function resolveWith(val) {
+  return new Promise(resolve => {
+    setTimeout(() => {
+      resolve(val)l
+    }, 100);
+  });
+}
+
+async function doSomething() {
+
+  const state = await promiser();
+
+  await state.set('foo', resolveWith('bar'));
+  await state.set('baz', resolveWith('quux'));
+
+  console.log(state); // <- { foo: 'bar', baz: 'quux' }
+
+}
+
+doSomething();
+```
+
+## Usage with Promise.all and Promise.race
+
+Stateful-promise is indeed compatible with `Promise.all` and `Promise.race`. The following examples show how it might work:
+
+**Promise.all**
+
+```javascript
+const first = promiser();
+const second = promiser();
+
+first.then(state => state.set('foo', Promise.resolve('bar')));
+second.then(state => state.set('baz', Promise.resolve('quux')));
+
+Promise.all([first, second]).then([firstState, secondState] => {
+  console.log(firstState.foo) // <- 'bar'
+  console.log(secondState.baz) // <- 'quux'
+});
+```
+
+**Promise.race**
+
+```javascript
+const first = promiser();
+const second = promiser();
+
+first.then(state => state.set('foo', Promise.resolve('bar')));
+second.then(state => state.set('baz', Promise.resolve('quux')));
+
+Promise.race([first, second]).then(state => {
+  const outcome1 = state.foo && state.foo === 'bar' && 'outcome 1';
+  const outcome2 = state.baz && state.baz === 'quux' && 'outcome 2';
+
+  console.log(outcome1 || outcome2) // <- either 'outcome 1' or 'outcome 2'
+});
+```
+
 ## API
 
 ### Promiser

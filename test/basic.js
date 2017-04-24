@@ -52,4 +52,55 @@ describe('Basic Functionality', function () {
     });
   })
 
+  async function asyncFun() {
+
+    function createPromise(val) {
+      return new Promise(resolve => resolve(val))
+    }
+
+    const state = await promiser();
+    await state.set('foo', createPromise('bar'));
+    await state.set('baz', createPromise('quux'));
+
+    assert.equal(state.foo, 'bar');
+    assert.equal(state.baz, 'quux');
+
+  }
+
+  it('should work with async/await', asyncFun);
+
+  it ('should work with Promise.all', function (done) {
+
+    const state1 = promiser();
+    const state2 = promiser();
+
+    state1.then(state => state.set('foo', Promise.resolve('bar')));
+    state2.then(state => state.set('baz', Promise.resolve('quux')));
+
+    Promise.all([state1, state2]).then(states => {
+      assert.equal(states[0].foo, 'bar');
+      assert.equal(states[1].baz, 'quux');
+      done();
+    });
+
+  });
+
+  it ('should work with Promise.race', function (done) {
+
+    const state1 = promiser();
+    const state2 = promiser();
+
+    state1.then(state => state.set('foo', Promise.resolve('bar')));
+    state2.then(state => state.set('baz', Promise.resolve('quux')));
+
+    Promise.race([state1, state2]).then(state => {
+      const outcome1 = state.foo && state.foo === 'bar';
+      const outcome2 = state.baz && state.baz === 'quux';
+
+      assert.ok(outcome1 || outcome2);
+      done();
+    });
+
+  });
+
 });

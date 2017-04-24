@@ -19,6 +19,6 @@ gulp.task('test', ['build'], next => {
   return gulp.src(['test/**/*.js'], { read: false })
              .pipe(mocha({
                reporter: 'spec',
-               compilers: 'js:babel-core/register'
+               compilers: ['js:babel-core/register', 'js:babel-polyfill']
              }));
 });

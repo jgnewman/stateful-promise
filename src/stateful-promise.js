@@ -58,6 +58,7 @@ class StatefulPromise {
     });
     return this;
   }
+
 }
 
 export default StatefulPromise;

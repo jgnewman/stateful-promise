@@ -1,5 +1,5 @@
 import StatefulPromise from './stateful-promise';
-import { assignPromiseEngine, createNativePromise } from './utils';
+import { assignPromiseEngine, createNativePromise, getNativePromise } from './utils';
 
 /**
  * The main function to be exported.

@@ -1,7 +1,7 @@
 {
   "name": "stateful-promise",
-  "version": "1.1.1",
-  "description": "A light wrapper around the native Promise implementation providing an updatable state available throughout the promise chain as well as useful iterative promise-based methods.",
+  "version": "1.1.2",
+  "description": "A wrapper around the native Promise implementation providing an updatable state available throughout the promise chain as well as useful iterative promise-based methods.",
   "main": "bin/index.js",
   "repository": "git@github.com:jgnewman/stateful-promise",
   "author": "John Newman <rescuecreative@gmail.com>",
@@ -10,18 +10,32 @@
     "build": "gulp build",
     "test": "gulp test"
   },
+  "keywords": [
+    "promise",
+    "promises",
+    "promises-a",
+    "promises-aplus",
+    "async",
+    "await",
+    "flow control",
+    "predictability",
+    "semantic"
+  ],
   "devDependencies": {
     "babel": "^6.23.0",
     "babel-cli": "^6.24.1",
     "babel-core": "^6.24.1",
     "babel-loader": "^6.4.1",
+    "babel-polyfill": "^6.23.0",
     "babel-preset-es2015": "^6.24.1",
+    "babel-preset-es2017": "^6.24.1",
+    "babel-preset-stage-0": "^6.24.1",
     "babel-register": "^6.24.1",
     "bluebird": "^3.5.0",
     "gulp": "^3.9.1",
     "gulp-babel": "^6.1.2",
     "gulp-clean": "^0.3.2",
-    "gulp-util": "^3.0.8",
-    "gulp-mocha": "^4.3.0"
+    "gulp-mocha": "^4.3.0",
+    "gulp-util": "^3.0.8"
   }
 }
