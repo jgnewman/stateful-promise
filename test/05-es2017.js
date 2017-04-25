@@ -3,7 +3,7 @@ import promiser from '../bin/index';
 
 describe('ES2017', function () {
 
-  it('should resolve properly with async/await', async function () {
+  it('should resolve properly', async function () {
 
     const state = await promiser();
     await state.set('foo', Promise.resolve('bar'));
@@ -14,7 +14,7 @@ describe('ES2017', function () {
 
   });
 
-  it('should reject properly with async/await', async function () {
+  it('should reject properly', async function () {
     let shouldBeFalse = false;
     let errors;
 
@@ -43,7 +43,7 @@ describe('ES2017', function () {
 
   });
 
-  it('should combine complex calls properly with async/await', async function () {
+  it('should combine complex calls properly', async function () {
 
     let vals = [1, 100, 1];
 
@@ -61,6 +61,35 @@ describe('ES2017', function () {
     });
 
     assert.deepEqual(state.foo, [{bar: 1}, {bar: 1}]);
+
+  });
+
+  it('should reject properly with complex calls as well', async function () {
+
+    let vals = [1, 100, 1];
+    let rejected = false;
+
+    function prom() {
+      return new Promise((resolve, reject) => {
+        const val = vals.shift();
+        reject(val);
+      })
+    }
+
+    const state = await promiser({ foo: [{}, {}, {}] })
+
+    try {
+
+      await state.filterSync('foo', obj => {
+        return state.setTo(obj, 'bar', prom()).then(result => result < 10)
+      });
+
+    } catch (err) {
+      rejected = true;
+    }
+
+    assert.ok(rejected);
+    assert.deepEqual(state._errors, [1, 100, 1]);
 
   });
 

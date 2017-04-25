@@ -26,6 +26,17 @@ export function assignPromiseEngine(engine) {
 }
 
 /**
+ * A quick class for building AsyncErrors that help us
+ * deal with async/await compatibility.
+ */
+class AsyncError {
+  constructor(state) {
+    this.state = state;
+    this.errors = state._errors;
+  }
+}
+
+/**
  * Hooks into the resolution of each state method to take advantage
  * of async/await error handling. Without this function, async/await
  * won't catch any errors because they're internally handled by this system.
@@ -43,7 +54,7 @@ export function assignPromiseEngine(engine) {
 export function fixAsyncAwait(state, toReturn) {
   const promiser = state._promiser;
   if (state._errors.length && !promiser.catchers.length) {
-    return NativePromise.reject({state: state, errors: state._errors});
+    return NativePromise.reject(new AsyncError(state));
   } else {
     return NativePromise.resolve(toReturn);
   }
@@ -174,7 +185,13 @@ export function promiseIteration(settings) {
       })
 
       .catch(error => {
-        settings.state._errors.push(settings.err || error);
+        const toRejectWith = settings.err || error;
+
+        // Don't reject with circular references to async errors
+        if (!(toRejectWith instanceof AsyncError)) {
+          settings.state._errors.push(settings.err || error);
+        }
+
         next(false);
       });
     };
@@ -239,7 +256,13 @@ export function promiseIterationSync(settings) {
         })
 
         .catch(error => {
-          settings.state._errors.push(settings.err || error);
+          const toRejectWith = settings.err || error;
+
+          // Don't reject with circular references to async errors
+          if (!(toRejectWith instanceof AsyncError)) {
+            settings.state._errors.push(settings.err || error);
+          }
+
           next(false);
         });
 

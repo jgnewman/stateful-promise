@@ -10,6 +10,9 @@ exports.executeChain = executeChain;
 exports.statifyPromise = statifyPromise;
 exports.promiseIteration = promiseIteration;
 exports.promiseIterationSync = promiseIterationSync;
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
 var NativePromise = void 0;
 
 // We're going to let users determine the native Promise engine for
@@ -38,6 +41,18 @@ function assignPromiseEngine(engine) {
 }
 
 /**
+ * A quick class for building AsyncErrors that help us
+ * deal with async/await compatibility.
+ */
+
+var AsyncError = function AsyncError(state) {
+  _classCallCheck(this, AsyncError);
+
+  this.state = state;
+  this.errors = state._errors;
+};
+
+/**
  * Hooks into the resolution of each state method to take advantage
  * of async/await error handling. Without this function, async/await
  * won't catch any errors because they're internally handled by this system.
@@ -52,10 +67,12 @@ function assignPromiseEngine(engine) {
  *
  * @return {Promise}           Either a direct rejection or a resolution.
  */
+
+
 function fixAsyncAwait(state, toReturn) {
   var promiser = state._promiser;
   if (state._errors.length && !promiser.catchers.length) {
-    return NativePromise.reject({ state: state, errors: state._errors });
+    return NativePromise.reject(new AsyncError(state));
   } else {
     return NativePromise.resolve(toReturn);
   }
@@ -182,7 +199,13 @@ function promiseIteration(settings) {
       promise.then(function (result) {
         next(true, result);
       }).catch(function (error) {
-        settings.state._errors.push(settings.err || error);
+        var toRejectWith = settings.err || error;
+
+        // Don't reject with circular references to async errors
+        if (!(toRejectWith instanceof AsyncError)) {
+          settings.state._errors.push(settings.err || error);
+        }
+
         next(false);
       });
     };
@@ -245,7 +268,13 @@ function promiseIterationSync(settings) {
         promise.then(function (result) {
           next(true, result);
         }).catch(function (error) {
-          settings.state._errors.push(settings.err || error);
+          var toRejectWith = settings.err || error;
+
+          // Don't reject with circular references to async errors
+          if (!(toRejectWith instanceof AsyncError)) {
+            settings.state._errors.push(settings.err || error);
+          }
+
           next(false);
         });
       } else {
