@@ -93,4 +93,21 @@ describe('ES2017', function () {
 
   });
 
+  it('should handle manual rejections properly', async function () {
+    let didReject = false;
+    let errors;
+
+    try {
+      const state = await promiser()
+      await state.rejectIf(!state.foo, 404)
+    } catch (e) {
+      didReject = true;
+      errors = e.errors;
+    }
+
+    assert.ok(didReject)
+    assert.deepEqual(errors, [404])
+
+  })
+
 });
