@@ -48,6 +48,25 @@ describe('Basic State Manipulation Methods', function () {
 
   });
 
+  it('should `handle` non-promise values', function (done) {
+    this.timeout(1000);
+
+    let initialState;
+
+    promiser()
+
+    .then(state => {
+      initialState = state;
+      return state.handle('foo');
+    })
+
+    .then(state => {
+      assert.equal(state, initialState);
+      done();
+    })
+
+  });
+
   it('should add a property to the state', function (done) {
     const promise = promiser();
     promise.then(state => {

@@ -33,8 +33,9 @@ var State = function () {
 
   /**
    * Allows you to handle a raw promise in a stateful-promise way.
-   * @param  {Promise} promise  The result of this promise becomes the new value.
-   * @param  {Any}     err      Optional. The error to collect if the promise is rejected.
+   * @param  {Maybe Promise} promise  The result of this promise is just passed through the system
+   *                                  without manipulating anything.
+   * @param  {Any}           err      Optional. The error to collect if the promise is rejected.
    *
    * @return {Promise} Always resolves with this.
    */
@@ -45,7 +46,11 @@ var State = function () {
     value: function handle(promise, err) {
       var _this = this;
 
-      return (0, _utils.statifyPromise)(this, promise, err).then(function (val) {
+      var promiseVal = !promise || typeof promise.then !== 'function' ? (0, _utils.createNativePromise)(function (resolve) {
+        return resolve(promise);
+      }) : promise;
+
+      return (0, _utils.statifyPromise)(this, promiseVal, err).then(function (val) {
         return (0, _utils.fixAsyncAwait)(_this, val);
       });
     }
