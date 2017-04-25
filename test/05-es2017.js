@@ -110,4 +110,27 @@ describe('ES2017', function () {
 
   })
 
+  it('should handle complex batching with async/await', async() => {
+    this.timeout(1000);
+
+    function timeoutPromise(duration, toResolveWith) {
+      return new Promise(resolve => {
+        setTimeout(() => {
+          resolve(toResolveWith)
+        }, duration)
+      })
+    }
+
+    const state = await promiser({ list: [1, 2, 3], list2: [] })
+
+    await state.batch(
+      state.forEach('list', item => state.push('list2', timeoutPromise(10 * item, item))),
+      state.set('foo', timeoutPromise(10, 'bar'))
+    )
+
+    assert.equal(state.foo, 'bar');
+    assert.deepEqual(state.list2, [1, 2, 3]);
+
+  });
+
 });

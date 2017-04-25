@@ -464,6 +464,43 @@ var State = function () {
     }
 
     /**
+     * Concurrently executes multiple state methods, resolving only once
+     * they are all finished.
+     *
+     * @param  {Promies} procs  Multiple state method calls, each returning a promise.
+     *
+     * @return {Promise} Always resolves with this.
+     */
+
+  }, {
+    key: 'batch',
+    value: function batch() {
+      var _this16 = this;
+
+      for (var _len2 = arguments.length, procs = Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
+        procs[_key2] = arguments[_key2];
+      }
+
+      return (0, _utils.createNativePromise)(function (resolve) {
+        var amount = procs.length;
+        var finished = 0;
+
+        function markFinished() {
+          finished += 1;
+          if (finished === amount) {
+            resolve(this);
+          }
+        }
+
+        procs.forEach(function (proc) {
+          return proc.then(markFinished).catch(markFinished);
+        });
+      }).then(function (val) {
+        return (0, _utils.fixAsyncAwait)(_this16, val);
+      });
+    }
+
+    /**
      * Converts the state into a plain object.
      *
      * @param {Object} settings  Optional. Contains the following keys:
@@ -476,14 +513,14 @@ var State = function () {
   }, {
     key: 'toObject',
     value: function toObject(settings) {
-      var _this16 = this;
+      var _this17 = this;
 
       settings = settings || {};
       var output = {};
       Object.keys(this).forEach(function (key) {
         if (key !== '_errors' && key !== '_promiser') {
           if (!settings.exclude || settings.exclude.indexOf(key) === -1) {
-            output[key] = _this16[key];
+            output[key] = _this17[key];
           }
         }
       });
@@ -504,16 +541,16 @@ var State = function () {
   }, {
     key: 'toPartialObject',
     value: function toPartialObject() {
-      var _this17 = this;
+      var _this18 = this;
 
-      for (var _len2 = arguments.length, keys = Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
-        keys[_key2] = arguments[_key2];
+      for (var _len3 = arguments.length, keys = Array(_len3), _key3 = 0; _key3 < _len3; _key3++) {
+        keys[_key3] = arguments[_key3];
       }
 
       var output = {};
       Object.keys(this).forEach(function (key) {
         if (keys.indexOf(key) > -1) {
-          output[key] = _this17[key];
+          output[key] = _this18[key];
         }
       });
       return output;

@@ -318,5 +318,60 @@ describe('Basic State Manipulation Methods', function () {
 
   });
 
+  it('should concurrently batch state method promises', function (done) {
+    this.timeout(1000);
+
+    function timeoutPromise(duration, toResolveWith) {
+      return new Promise(resolve => {
+        setTimeout(() => {
+          resolve(toResolveWith)
+        }, duration)
+      })
+    }
+
+    promiser()
+
+    .then(state => {
+      return state.batch(
+        state.set('foo', timeoutPromise(20, 'bar')),
+        state.set('baz', timeoutPromise(10, 'quux'))
+      )
+    })
+
+    .then(state => {
+      assert.equal(state.foo, 'bar');
+      assert.equal(state.baz, 'quux');
+      done();
+    })
+
+  });
+
+  it('should collect errors properly when batching', function (done) {
+    this.timeout(1000);
+
+    function timeoutPromise(duration, toRejectWith) {
+      return new Promise((resolve, reject) => {
+        setTimeout(() => {
+          reject(toRejectWith)
+        }, duration)
+      })
+    }
+
+    promiser()
+
+    .then(state => {
+      return state.batch(
+        state.set('foo', timeoutPromise(20, 'fail1')),
+        state.set('baz', timeoutPromise(10, 'fail2'))
+      )
+    })
+
+    .catch((state, err) => {
+      assert.deepEqual(state._errors, ['fail2', 'fail1']);
+      done();
+    })
+
+  });
+
 
 });

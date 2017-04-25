@@ -392,6 +392,33 @@ class State {
   }
 
   /**
+   * Concurrently executes multiple state methods, resolving only once
+   * they are all finished.
+   *
+   * @param  {Promies} procs  Multiple state method calls, each returning a promise.
+   *
+   * @return {Promise} Always resolves with this.
+   */
+  batch(...procs) {
+    return createNativePromise(resolve => {
+      const amount   = procs.length;
+      let   finished = 0;
+
+      function markFinished() {
+        finished += 1;
+        if (finished === amount) {
+          resolve(this);
+        }
+      }
+
+      procs.forEach(proc => proc.then(markFinished).catch(markFinished));
+    })
+    .then(val => {
+      return fixAsyncAwait(this, val);
+    });
+  }
+
+  /**
    * Converts the state into a plain object.
    *
    * @param {Object} settings  Optional. Contains the following keys:

@@ -182,5 +182,33 @@ describe('Iterative State Methods', function () {
 
   });
 
+  it('should handle iterations when batching', function (done) {
+    this.timeout(1000);
+
+    function timeoutPromise(duration, toResolveWith) {
+      return new Promise(resolve => {
+        setTimeout(() => {
+          resolve(toResolveWith)
+        }, duration)
+      })
+    }
+
+    promiser({ list: [1, 2, 3], list2: [] })
+
+    .then(state => {
+      return state.batch(
+        state.forEach('list', item => state.push('list2', timeoutPromise(10 * item, item))),
+        state.set('foo', timeoutPromise(10, 'bar'))
+      )
+    })
+
+    .then(state => {
+      assert.equal(state.foo, 'bar');
+      assert.deepEqual(state.list2, [1, 2, 3]);
+      done();
+    })
+
+  });
+
 
 });
