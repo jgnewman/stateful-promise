@@ -43,7 +43,7 @@ describe('ES2017', function () {
 
   });
 
-  it('should combine complex calls properly', async function () {
+  it('should combine complex calls properly', async() => {
 
     let vals = [1, 100, 1];
 
@@ -64,7 +64,7 @@ describe('ES2017', function () {
 
   });
 
-  it('should reject properly with complex calls as well', async function () {
+  it('should reject properly with complex calls as well', async() => {
 
     let vals = [1, 100, 1];
     let rejected = false;
@@ -93,7 +93,7 @@ describe('ES2017', function () {
 
   });
 
-  it('should handle manual rejections properly', async function () {
+  it('should handle manual rejections properly', async() => {
     let didReject = false;
     let errors;
 
