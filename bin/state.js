@@ -21,12 +21,14 @@ var State = function () {
    * @constructor
    *
    * Takes an Object (value) and assigns each key to this.
+   * Also takes a circular reference to the promiser object that owns it
    */
-  function State(value) {
+  function State(value, promiser) {
     _classCallCheck(this, State);
 
     Object.assign(this, value);
     this._errors = [];
+    this._promiser = promiser;
   }
 
   /**
@@ -41,7 +43,11 @@ var State = function () {
   _createClass(State, [{
     key: 'handle',
     value: function handle(promise, err) {
-      return (0, _utils.statifyPromise)(this, promise, err);
+      var _this = this;
+
+      return (0, _utils.statifyPromise)(this, promise, err).then(function (val) {
+        return (0, _utils.fixAsyncAwait)(_this, val);
+      });
     }
 
     /**
@@ -58,9 +64,13 @@ var State = function () {
   }, {
     key: 'setTo',
     value: function setTo(obj, name, promise, err) {
+      var _this2 = this;
+
       return (0, _utils.statifyPromise)(this, promise, err, function (result) {
         obj[name] = result;
         return result;
+      }).then(function (val) {
+        return (0, _utils.fixAsyncAwait)(_this2, val);
       });
     }
 
@@ -77,10 +87,12 @@ var State = function () {
   }, {
     key: 'set',
     value: function set(prop, promise, err) {
-      var _this = this;
+      var _this3 = this;
 
       return (0, _utils.statifyPromise)(this, promise, err, function (result) {
-        _this[prop] = result;
+        _this3[prop] = result;
+      }).then(function (val) {
+        return (0, _utils.fixAsyncAwait)(_this3, val);
       });
     }
 
@@ -97,9 +109,13 @@ var State = function () {
   }, {
     key: 'pushTo',
     value: function pushTo(arr, promise, err) {
+      var _this4 = this;
+
       return (0, _utils.statifyPromise)(this, promise, err, function (result) {
         arr.push(result);
         return result;
+      }).then(function (val) {
+        return (0, _utils.fixAsyncAwait)(_this4, val);
       });
     }
 
@@ -116,10 +132,12 @@ var State = function () {
   }, {
     key: 'push',
     value: function push(prop, promise, err) {
-      var _this2 = this;
+      var _this5 = this;
 
       return (0, _utils.statifyPromise)(this, promise, err, function (result) {
-        _this2[prop].push(result);
+        _this5[prop].push(result);
+      }).then(function (val) {
+        return (0, _utils.fixAsyncAwait)(_this5, val);
       });
     }
 
@@ -136,9 +154,13 @@ var State = function () {
   }, {
     key: 'unshiftTo',
     value: function unshiftTo(arr, promise, err) {
+      var _this6 = this;
+
       return (0, _utils.statifyPromise)(this, promise, err, function (result) {
         arr.unshift(result);
         return result;
+      }).then(function (val) {
+        return (0, _utils.fixAsyncAwait)(_this6, val);
       });
     }
 
@@ -155,10 +177,12 @@ var State = function () {
   }, {
     key: 'unshift',
     value: function unshift(prop, promise, err) {
-      var _this3 = this;
+      var _this7 = this;
 
       return (0, _utils.statifyPromise)(this, promise, err, function (result) {
-        _this3[prop].unshift(result);
+        _this7[prop].unshift(result);
+      }).then(function (val) {
+        return (0, _utils.fixAsyncAwait)(_this7, val);
       });
     }
 
@@ -175,12 +199,14 @@ var State = function () {
   }, {
     key: 'rejectIf',
     value: function rejectIf(condition, err) {
-      var _this4 = this;
+      var _this8 = this;
 
       var hasErr = arguments.length > 1;
       return (0, _utils.createNativePromise)(function (resolve) {
-        !!condition && _this4._errors.push(hasErr ? err : 'Condition failed.');
-        resolve(_this4);
+        !!condition && _this8._errors.push(hasErr ? err : 'Condition failed.');
+        resolve(_this8);
+      }).then(function (val) {
+        return (0, _utils.fixAsyncAwait)(_this8, val);
       });
     }
 
@@ -198,7 +224,7 @@ var State = function () {
   }, {
     key: 'rejectIfAny',
     value: function rejectIfAny() {
-      var _this5 = this;
+      var _this9 = this;
 
       for (var _len = arguments.length, conditionArrays = Array(_len), _key = 0; _key < _len; _key++) {
         conditionArrays[_key] = arguments[_key];
@@ -208,11 +234,13 @@ var State = function () {
         conditionArrays.some(function (arr) {
           var hasErr = arr.length > 1;
           if (!!arr[0]) {
-            _this5._errors.push(hasErr ? arr[1] : 'Condition failed.');
+            _this9._errors.push(hasErr ? arr[1] : 'Condition failed.');
             return true;
           }
         });
-        resolve(_this5);
+        resolve(_this9);
+      }).then(function (val) {
+        return (0, _utils.fixAsyncAwait)(_this9, val);
       });
     }
 
@@ -232,11 +260,15 @@ var State = function () {
   }, {
     key: 'forEach',
     value: function forEach(prop, iterator, err) {
+      var _this10 = this;
+
       return (0, _utils.promiseIteration)({
         state: this,
         arr: this[prop],
         iterator: iterator,
         err: err
+      }).then(function (val) {
+        return (0, _utils.fixAsyncAwait)(_this10, val);
       });
     }
 
@@ -256,6 +288,8 @@ var State = function () {
   }, {
     key: 'map',
     value: function map(prop, iterator, err) {
+      var _this11 = this;
+
       return (0, _utils.promiseIteration)({
         state: this,
         arr: this[prop],
@@ -264,6 +298,8 @@ var State = function () {
         hook: function hook(collector) {
           collector.collection[collector.index] = collector.result;
         }
+      }).then(function (val) {
+        return (0, _utils.fixAsyncAwait)(_this11, val);
       });
     }
 
@@ -286,7 +322,7 @@ var State = function () {
   }, {
     key: 'filter',
     value: function filter(prop, iterator, err) {
-      var _this6 = this;
+      var _this12 = this;
 
       return (0, _utils.promiseIteration)({
         state: this,
@@ -303,9 +339,11 @@ var State = function () {
           }
 
           if (collector.isLastResult) {
-            _this6[prop] = collector.newCollection;
+            _this12[prop] = collector.newCollection;
           }
         }
+      }).then(function (val) {
+        return (0, _utils.fixAsyncAwait)(_this12, val);
       });
     }
 
@@ -327,12 +365,16 @@ var State = function () {
   }, {
     key: 'forEachSync',
     value: function forEachSync(prop, iterator, err, nobail) {
+      var _this13 = this;
+
       return (0, _utils.promiseIterationSync)({
         state: this,
         arr: this[prop],
         iterator: iterator,
         err: err,
         nobail: nobail
+      }).then(function (val) {
+        return (0, _utils.fixAsyncAwait)(_this13, val);
       });
     }
 
@@ -355,6 +397,8 @@ var State = function () {
   }, {
     key: 'mapSync',
     value: function mapSync(prop, iterator, err, nobail) {
+      var _this14 = this;
+
       return (0, _utils.promiseIterationSync)({
         state: this,
         arr: this[prop],
@@ -364,6 +408,8 @@ var State = function () {
         hook: function hook(collector) {
           collector.collection[collector.index] = collector.result;
         }
+      }).then(function (val) {
+        return (0, _utils.fixAsyncAwait)(_this14, val);
       });
     }
 
@@ -386,7 +432,7 @@ var State = function () {
   }, {
     key: 'filterSync',
     value: function filterSync(prop, iterator, err, nobail) {
-      var _this7 = this;
+      var _this15 = this;
 
       return (0, _utils.promiseIteration)({
         state: this,
@@ -404,9 +450,11 @@ var State = function () {
           }
 
           if (collector.isLastResult) {
-            _this7[prop] = collector.newCollection;
+            _this15[prop] = collector.newCollection;
           }
         }
+      }).then(function (val) {
+        return (0, _utils.fixAsyncAwait)(_this15, val);
       });
     }
 
@@ -423,14 +471,14 @@ var State = function () {
   }, {
     key: 'toObject',
     value: function toObject(settings) {
-      var _this8 = this;
+      var _this16 = this;
 
       settings = settings || {};
       var output = {};
       Object.keys(this).forEach(function (key) {
-        if (key !== '_errors') {
+        if (key !== '_errors' && key !== '_promiser') {
           if (!settings.exclude || settings.exclude.indexOf(key) === -1) {
-            output[key] = _this8[key];
+            output[key] = _this16[key];
           }
         }
       });
@@ -451,7 +499,7 @@ var State = function () {
   }, {
     key: 'toPartialObject',
     value: function toPartialObject() {
-      var _this9 = this;
+      var _this17 = this;
 
       for (var _len2 = arguments.length, keys = Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
         keys[_key2] = arguments[_key2];
@@ -460,7 +508,7 @@ var State = function () {
       var output = {};
       Object.keys(this).forEach(function (key) {
         if (keys.indexOf(key) > -1) {
-          output[key] = _this9[key];
+          output[key] = _this17[key];
         }
       });
       return output;

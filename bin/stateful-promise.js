@@ -37,7 +37,7 @@ var StatefulPromise = function () {
 
     _classCallCheck(this, StatefulPromise);
 
-    this.state = new _state2.default(state || {});
+    this.state = new _state2.default(state || {}, this);
     this.queue = [];
     this.catchers = [];
 

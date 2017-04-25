@@ -53,19 +53,6 @@ describe('Basic Functionality', function () {
     });
   })
 
-  async function asyncFun() {
-
-    const state = await promiser();
-    await state.set('foo', Promise.resolve('bar'));
-    await state.set('baz', Promise.resolve('quux'));
-
-    assert.equal(state.foo, 'bar');
-    assert.equal(state.baz, 'quux');
-
-  }
-
-  it('should work with async/await', asyncFun);
-
   it ('should work with Promise.all', function (done) {
 
     const state1 = promiser();

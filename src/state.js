@@ -2,7 +2,8 @@ import {
   statifyPromise,
   createNativePromise,
   promiseIteration,
-  promiseIterationSync
+  promiseIterationSync,
+  fixAsyncAwait
 } from './utils';
 
 /**
@@ -16,10 +17,12 @@ class State {
    * @constructor
    *
    * Takes an Object (value) and assigns each key to this.
+   * Also takes a circular reference to the promiser object that owns it
    */
-  constructor(value) {
+  constructor(value, promiser) {
     Object.assign(this, value);
     this._errors = [];
+    this._promiser = promiser;
   }
 
   /**
@@ -30,7 +33,9 @@ class State {
    * @return {Promise} Always resolves with this.
    */
   handle(promise, err) {
-    return statifyPromise(this, promise, err);
+    return statifyPromise(this, promise, err).then(val => {
+      return fixAsyncAwait(this, val);
+    });
   }
 
   /**
@@ -47,6 +52,9 @@ class State {
     return statifyPromise(this, promise, err, result => {
       obj[name] = result;
       return result;
+    })
+    .then(val => {
+      return fixAsyncAwait(this, val);
     });
   }
 
@@ -62,6 +70,9 @@ class State {
   set(prop, promise, err) {
     return statifyPromise(this, promise, err, result => {
       this[prop] = result;
+    })
+    .then(val => {
+      return fixAsyncAwait(this, val);
     });
   }
 
@@ -78,6 +89,9 @@ class State {
     return statifyPromise(this, promise, err, result => {
       arr.push(result);
       return result;
+    })
+    .then(val => {
+      return fixAsyncAwait(this, val);
     });
   }
 
@@ -93,6 +107,9 @@ class State {
   push(prop, promise, err) {
     return statifyPromise(this, promise, err, result => {
       this[prop].push(result);
+    })
+    .then(val => {
+      return fixAsyncAwait(this, val);
     });
   }
 
@@ -109,6 +126,9 @@ class State {
     return statifyPromise(this, promise, err, result => {
       arr.unshift(result);
       return result;
+    })
+    .then(val => {
+      return fixAsyncAwait(this, val);
     });
   }
 
@@ -124,6 +144,9 @@ class State {
   unshift(prop, promise, err) {
     return statifyPromise(this, promise, err, result => {
       this[prop].unshift(result);
+    })
+    .then(val => {
+      return fixAsyncAwait(this, val);
     });
   }
 
@@ -141,6 +164,9 @@ class State {
     return createNativePromise(resolve => {
       !!condition && this._errors.push(hasErr ? err : 'Condition failed.');
       resolve(this);
+    })
+    .then(val => {
+      return fixAsyncAwait(this, val);
     });
   }
 
@@ -164,6 +190,9 @@ class State {
         }
       });
       resolve(this);
+    })
+    .then(val => {
+      return fixAsyncAwait(this, val);
     });
   }
 
@@ -185,6 +214,9 @@ class State {
       arr: this[prop],
       iterator: iterator,
       err: err
+    })
+    .then(val => {
+      return fixAsyncAwait(this, val);
     });
   }
 
@@ -209,6 +241,9 @@ class State {
       hook: (collector) => {
         collector.collection[collector.index] = collector.result;
       }
+    })
+    .then(val => {
+      return fixAsyncAwait(this, val);
     });
   }
 
@@ -246,6 +281,9 @@ class State {
           this[prop] = collector.newCollection;
         }
       }
+    })
+    .then(val => {
+      return fixAsyncAwait(this, val);
     });
   }
 
@@ -270,6 +308,9 @@ class State {
       iterator: iterator,
       err: err,
       nobail: nobail
+    })
+    .then(val => {
+      return fixAsyncAwait(this, val);
     });
   }
 
@@ -298,6 +339,9 @@ class State {
       hook: (collector) => {
         collector.collection[collector.index] = collector.result;
       }
+    })
+    .then(val => {
+      return fixAsyncAwait(this, val);
     });
   }
 
@@ -336,6 +380,9 @@ class State {
           this[prop] = collector.newCollection;
         }
       }
+    })
+    .then(val => {
+      return fixAsyncAwait(this, val);
     });
   }
 
@@ -352,7 +399,7 @@ class State {
     settings = settings || {};
     const output = {};
     Object.keys(this).forEach(key => {
-      if (key !== '_errors') {
+      if (key !== '_errors' && key !== '_promiser') {
         if (!settings.exclude || settings.exclude.indexOf(key) === -1) {
           output[key] = this[key];
         }

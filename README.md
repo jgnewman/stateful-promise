@@ -158,12 +158,21 @@ The async/await spec is an exciting proposal for the ES2017 JavaScript implement
 ```javascript
 async function doSomething() {
 
-  const state = await promiser();
+  try {
 
-  await state.set('foo', Promise.resolve('bar'));
-  await state.set('baz', Promise.resolve('quux'));
+    const state = await promiser();
 
-  console.log(state); // <- { foo: 'bar', baz: 'quux' }
+    await state.set('foo', Promise.resolve('bar'));
+    await state.set('baz', Promise.resolve('quux'));
+
+    console.log(state); // <- { foo: 'bar', baz: 'quux' }
+
+  // And if something goes wrong...
+  } catch(err) {
+
+    console.log(err); // <- { state: state, errors: [...] }
+
+  }
 
 }
 

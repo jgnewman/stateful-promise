@@ -16,7 +16,7 @@ class StatefulPromise {
    * a chain of promises.
    */
   constructor(state) {
-    this.state = new State(state || {});
+    this.state = new State(state || {}, this);
     this.queue = [];
     this.catchers = [];
 

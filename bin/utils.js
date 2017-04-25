@@ -5,6 +5,7 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.createNativePromise = createNativePromise;
 exports.assignPromiseEngine = assignPromiseEngine;
+exports.fixAsyncAwait = fixAsyncAwait;
 exports.executeChain = executeChain;
 exports.statifyPromise = statifyPromise;
 exports.promiseIteration = promiseIteration;
@@ -34,6 +35,30 @@ function createNativePromise(fn) {
  */
 function assignPromiseEngine(engine) {
   NativePromise = engine;
+}
+
+/**
+ * Hooks into the resolution of each state method to take advantage
+ * of async/await error handling. Without this function, async/await
+ * won't catch any errors because they're internally handled by this system.
+ *
+ * If there are errors in the error collector and no registered catch blocks,
+ * we'll trigger a rejection that won't be caught by the system. This will
+ * allow async/await to catch the error if we're in that environment and, if not,
+ * it'll trigger an error the user should know about.
+ *
+ * @param  {State}   state     A State instance.
+ * @param  {Any}     toReturn  The value resolved by the state method.
+ *
+ * @return {Promise}           Either a direct rejection or a resolution.
+ */
+function fixAsyncAwait(state, toReturn) {
+  var promiser = state._promiser;
+  if (state._errors.length && !promiser.catchers.length) {
+    return NativePromise.reject({ state: state, errors: state._errors });
+  } else {
+    return NativePromise.resolve(toReturn);
+  }
 }
 
 /**
