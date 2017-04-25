@@ -797,11 +797,11 @@ promiser({ num: 20 })
 })
 ```
 
-#### `State#handle(promise [, err])`
+#### `State#handle(value [, err])`
 
-Allows you to pass a normal promise through in a way that takes full advantage of the system but doesn't take any other actions to manipulate the state. You should use this method when you don't need to make use of the value resolved by the promise.
+Allows you to pass a normal value through your chain in a way that takes full advantage of the stateful-promise system but doesn't take any other actions to manipulate the state. You should use this method when you don't need to make later use of the value resolved by the promise.
 
-- `promise` {Promise} The result of this promise is not trapped for you anywhere.
+- `value` {Any} The value passed through. I can be a promise but does not have to be.
 - `err` {Any} _Optional._ If provided, will override the error resulting from a promise rejection.
 
 Returns a Promise that resolves with the state.
@@ -825,6 +825,29 @@ promiser()
 
 .catch((state, err) => {
   console.log(err) // <- 'failed'
+})
+```
+
+#### `State#batch(...calls)`
+
+This function allows you to concurrently run multiple calls to state methods and will resolve only when they've all finished.
+
+- `...calls` {Promises} A spread of calls to other state methods to run concurrently.
+
+Returns a Promise that resolves with the state.
+
+```javascript
+promiser()
+
+.then(state => {
+  return state.batch(
+    state.set('foo', Promise.resolve('bar')),
+    state.set('baz', Promise.resolve('quux'))
+  )
+})
+
+.then(state => {
+  console.log(state.foo, state.baz) // <- 'bar', 'quux'
 })
 ```
 
@@ -856,7 +879,7 @@ promiser()
 })
 ```
 
-This happened because we haven't paid close attention to how the `setTo` function resolves. This function resolves not with the iterator item, but with the result of it's promise argument. Because `map` replaces array items with the result of its iterator calls, we need to make sure those calls are returning the updated `user` object, not the documents array. To fix it, we can do this:
+This happened because we haven't paid close attention to how the `setTo` function resolves. This function resolves not with the iterator item, but with the result of its promise argument. Because `map` replaces array items with the result of its iterator calls, we need to make sure those calls are returning the updated `user` object, not the documents array. To fix it, we can do this:
 
 ```javascript
 // Create a new 'docs' property for each user object as the
@@ -892,8 +915,6 @@ promiser()
 ```
 
 In this illustration we've skipped over the mistake and shown what needs to happen in order for this function to behave as expected. Because `filter` will keep an array item if its iterator promise resolves truthily and remove the item if it does not, we need to re-route the result of our `setTo` call to return a boolean. This will allow `filter` to determine whether or not to keep the associated item in the array.
-
-If you'd like an easy way to remember how each of the state methods resolves, think of it like this: All state methods resolve with the state _unless_ the name of the method has the suffix "To" (for example `setTo`, `pushTo`, etc). In these cases, the method always resolves with the result of its promise argument.
 
 And that's about it. **Happy promising!**
 
