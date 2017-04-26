@@ -34,7 +34,12 @@ describe('ES2017', function () {
     }
 
     assert.equal(shouldBeFalse, false);
-    assert.deepEqual(errors, {state: state, errors: [3]});
+    assert.deepEqual(errors, {
+      err: 3,
+      state: state,
+      errors: [3],
+      statefulPromise: true
+    });
 
     assert.equal(state.a, 1);
     assert.equal(state.b, 2);
@@ -107,6 +112,20 @@ describe('ES2017', function () {
 
     assert.ok(didReject)
     assert.deepEqual(errors, [404])
+
+  })
+
+  it('should make error destructuring easy', async() => {
+    let error;
+
+    try {
+      const state = await promiser()
+      await state.rejectIf(!state.foo, 404)
+    } catch ({ err }) {
+      error = err;
+    }
+
+    assert.deepEqual(error, 404)
 
   })
 

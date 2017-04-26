@@ -31,8 +31,10 @@ export function assignPromiseEngine(engine) {
  */
 class AsyncError {
   constructor(state) {
-    this.state = state;
+    this.err    = state._errors[0];
+    this.state  = state;
     this.errors = state._errors;
+    this.statefulPromise = true;
   }
 }
 

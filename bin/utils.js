@@ -48,8 +48,10 @@ function assignPromiseEngine(engine) {
 var AsyncError = function AsyncError(state) {
   _classCallCheck(this, AsyncError);
 
+  this.err = state._errors[0];
   this.state = state;
   this.errors = state._errors;
+  this.statefulPromise = true;
 };
 
 /**
