@@ -117,15 +117,20 @@ describe('ES2017', function () {
 
   it('should make error destructuring easy', async() => {
     let error;
+    let stateTrack;
+    let errStateTrack;
 
     try {
       const state = await promiser()
+      stateTrack = state;
       await state.rejectIf(!state.foo, 404)
-    } catch ({ err }) {
+    } catch ({ state, err }) {
       error = err;
+      errStateTrack = state;
     }
 
-    assert.deepEqual(error, 404)
+    assert.equal(stateTrack, errStateTrack)
+    assert.equal(error, 404)
 
   })
 
