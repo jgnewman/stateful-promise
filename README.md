@@ -168,9 +168,9 @@ async function doSomething() {
     console.log(state); // <- { foo: 'bar', baz: 'quux' }
 
   // And if something goes wrong...
-  } catch(err) {
+  } catch(e) {
 
-    console.log(err); // <- { state: state, errors: [...] }
+    console.log(e); // <- { err: Error, state: state, ... }
 
   }
 
