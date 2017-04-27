@@ -215,7 +215,7 @@ describe('Basic State Manipulation Methods', function () {
     })
   });
 
-  it('should allow manual rejections by multiple conditions', function (done) {
+  it('should allow manual rejections by any of multiple conditions', function (done) {
     const promise = promiser();
     let   shouldNotBeTrue = false;
 
@@ -227,6 +227,30 @@ describe('Basic State Manipulation Methods', function () {
     })
     .catch((state, err) => {
       assert.equal(err, 3);
+      assert.equal(shouldNotBeTrue, false);
+      done();
+    })
+  });
+
+  it('should allow manual rejections by all of multiple conditions', function (done) {
+    const promise = promiser();
+    let   shouldNotBeTrue = true;
+
+    promise
+    .then(state => {
+      return state.rejectIfAll([true, true, false], 'error1');
+    })
+    .then(state => {
+      shouldNotBeTrue = false;
+    })
+    .then(state => {
+      return state.rejectIfAll([true, true, true], 'error2');
+    })
+    .then(state => {
+      shouldNotBeTrue = true;
+    })
+    .catch((state, err) => {
+      assert.equal(err, 'error2');
       assert.equal(shouldNotBeTrue, false);
       done();
     })

@@ -202,6 +202,37 @@ class State {
   }
 
   /**
+   * Manually trigger a rejection in your chain under all of many conditions.
+   * If at least one of the conditions is not met, resolves.
+   *
+   * @param {Array} conditions  Many Booleans. Rejects if all are true.
+   * @param {Any}   err         The error to reject with if all conditions are true.
+   *
+   * @return {Promise} Always resolves with this.
+   */
+  rejectIfAll(conditions, err) {
+    return createNativePromise(resolve => {
+      const hasErr       = arguments.length > 1;
+      let   shouldReject = true;
+      let   rejectWith   = err;
+
+      conditions.some(condition => {
+        if (!condition) {
+          shouldReject = false;
+          return true;
+        }
+      });
+
+      shouldReject && this._errors.push(hasErr ? err : 'Condition failed.');
+      resolve(this);
+
+    })
+    .then(val => {
+      return fixAsyncAwait(this, val);
+    });
+  }
+
+  /**
    * Asynchronously loops over each item in a state property calling an
    * iterator for each one that returns a promise. It returns a promise itself
    * that only resolves once all iterations have finished.

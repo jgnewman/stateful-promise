@@ -250,6 +250,41 @@ var State = function () {
     }
 
     /**
+     * Manually trigger a rejection in your chain under all of many conditions.
+     * If at least one of the conditions is not met, resolves.
+     *
+     * @param {Array} conditions  Many Booleans. Rejects if all are true.
+     * @param {Any}   err         The error to reject with if all conditions are true.
+     *
+     * @return {Promise} Always resolves with this.
+     */
+
+  }, {
+    key: 'rejectIfAll',
+    value: function rejectIfAll(conditions, err) {
+      var _arguments = arguments,
+          _this10 = this;
+
+      return (0, _utils.createNativePromise)(function (resolve) {
+        var hasErr = _arguments.length > 1;
+        var shouldReject = true;
+        var rejectWith = err;
+
+        conditions.some(function (condition) {
+          if (!condition) {
+            shouldReject = false;
+            return true;
+          }
+        });
+
+        shouldReject && _this10._errors.push(hasErr ? err : 'Condition failed.');
+        resolve(_this10);
+      }).then(function (val) {
+        return (0, _utils.fixAsyncAwait)(_this10, val);
+      });
+    }
+
+    /**
      * Asynchronously loops over each item in a state property calling an
      * iterator for each one that returns a promise. It returns a promise itself
      * that only resolves once all iterations have finished.
@@ -265,7 +300,7 @@ var State = function () {
   }, {
     key: 'forEach',
     value: function forEach(prop, iterator, err) {
-      var _this10 = this;
+      var _this11 = this;
 
       return (0, _utils.promiseIteration)({
         state: this,
@@ -273,7 +308,7 @@ var State = function () {
         iterator: iterator,
         err: err
       }).then(function (val) {
-        return (0, _utils.fixAsyncAwait)(_this10, val);
+        return (0, _utils.fixAsyncAwait)(_this11, val);
       });
     }
 
@@ -293,7 +328,7 @@ var State = function () {
   }, {
     key: 'map',
     value: function map(prop, iterator, err) {
-      var _this11 = this;
+      var _this12 = this;
 
       return (0, _utils.promiseIteration)({
         state: this,
@@ -304,7 +339,7 @@ var State = function () {
           collector.collection[collector.index] = collector.result;
         }
       }).then(function (val) {
-        return (0, _utils.fixAsyncAwait)(_this11, val);
+        return (0, _utils.fixAsyncAwait)(_this12, val);
       });
     }
 
@@ -327,7 +362,7 @@ var State = function () {
   }, {
     key: 'filter',
     value: function filter(prop, iterator, err) {
-      var _this12 = this;
+      var _this13 = this;
 
       return (0, _utils.promiseIteration)({
         state: this,
@@ -344,11 +379,11 @@ var State = function () {
           }
 
           if (collector.isLastResult) {
-            _this12[prop] = collector.newCollection;
+            _this13[prop] = collector.newCollection;
           }
         }
       }).then(function (val) {
-        return (0, _utils.fixAsyncAwait)(_this12, val);
+        return (0, _utils.fixAsyncAwait)(_this13, val);
       });
     }
 
@@ -370,7 +405,7 @@ var State = function () {
   }, {
     key: 'forEachSync',
     value: function forEachSync(prop, iterator, err, nobail) {
-      var _this13 = this;
+      var _this14 = this;
 
       return (0, _utils.promiseIterationSync)({
         state: this,
@@ -379,7 +414,7 @@ var State = function () {
         err: err,
         nobail: nobail
       }).then(function (val) {
-        return (0, _utils.fixAsyncAwait)(_this13, val);
+        return (0, _utils.fixAsyncAwait)(_this14, val);
       });
     }
 
@@ -402,7 +437,7 @@ var State = function () {
   }, {
     key: 'mapSync',
     value: function mapSync(prop, iterator, err, nobail) {
-      var _this14 = this;
+      var _this15 = this;
 
       return (0, _utils.promiseIterationSync)({
         state: this,
@@ -414,7 +449,7 @@ var State = function () {
           collector.collection[collector.index] = collector.result;
         }
       }).then(function (val) {
-        return (0, _utils.fixAsyncAwait)(_this14, val);
+        return (0, _utils.fixAsyncAwait)(_this15, val);
       });
     }
 
@@ -437,7 +472,7 @@ var State = function () {
   }, {
     key: 'filterSync',
     value: function filterSync(prop, iterator, err, nobail) {
-      var _this15 = this;
+      var _this16 = this;
 
       return (0, _utils.promiseIteration)({
         state: this,
@@ -455,11 +490,11 @@ var State = function () {
           }
 
           if (collector.isLastResult) {
-            _this15[prop] = collector.newCollection;
+            _this16[prop] = collector.newCollection;
           }
         }
       }).then(function (val) {
-        return (0, _utils.fixAsyncAwait)(_this15, val);
+        return (0, _utils.fixAsyncAwait)(_this16, val);
       });
     }
 
@@ -475,7 +510,7 @@ var State = function () {
   }, {
     key: 'batch',
     value: function batch() {
-      var _this16 = this;
+      var _this17 = this;
 
       for (var _len2 = arguments.length, procs = Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
         procs[_key2] = arguments[_key2];
@@ -496,7 +531,7 @@ var State = function () {
           return proc.then(markFinished).catch(markFinished);
         });
       }).then(function (val) {
-        return (0, _utils.fixAsyncAwait)(_this16, val);
+        return (0, _utils.fixAsyncAwait)(_this17, val);
       });
     }
 
@@ -513,14 +548,14 @@ var State = function () {
   }, {
     key: 'toObject',
     value: function toObject(settings) {
-      var _this17 = this;
+      var _this18 = this;
 
       settings = settings || {};
       var output = {};
       Object.keys(this).forEach(function (key) {
         if (key !== '_errors' && key !== '_promiser') {
           if (!settings.exclude || settings.exclude.indexOf(key) === -1) {
-            output[key] = _this17[key];
+            output[key] = _this18[key];
           }
         }
       });
@@ -541,7 +576,7 @@ var State = function () {
   }, {
     key: 'toPartialObject',
     value: function toPartialObject() {
-      var _this18 = this;
+      var _this19 = this;
 
       for (var _len3 = arguments.length, keys = Array(_len3), _key3 = 0; _key3 < _len3; _key3++) {
         keys[_key3] = arguments[_key3];
@@ -550,7 +585,7 @@ var State = function () {
       var output = {};
       Object.keys(this).forEach(function (key) {
         if (keys.indexOf(key) > -1) {
-          output[key] = _this18[key];
+          output[key] = _this19[key];
         }
       });
       return output;
