@@ -66,6 +66,21 @@ describe('Iterative State Methods', function () {
     });
   });
 
+  it('should allow non-promise values returned by iterations', function (done) {
+    const promise = promiser({ foo: [1, 2, 3] });
+    let   inc     = 0;
+
+    promise.then(state => {
+      return state.forEach('foo', (num, index) => {
+        return inc ++
+      });
+    })
+    .then(state => {
+      assert.equal(inc, 3);
+      done();
+    });
+  });
+
   it('should collect errors from `forEach`', function (done) {
     const promise = promiser({ foo: [1, 2, 3] });
     promise.then(state => {

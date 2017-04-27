@@ -197,6 +197,11 @@ function promiseIteration(settings) {
         }
       };
 
+      // Allow non-promise values from our iterator calls
+      if (!promise || typeof promise.then !== 'function') {
+        promise = NativePromise.resolve(promise);
+      }
+
       // When the promise resolves, run a hook if we have one.
       promise.then(function (result) {
         next(true, result);
@@ -265,6 +270,11 @@ function promiseIterationSync(settings) {
             }
           }
         };
+
+        // Allow non-promise values from our iterator calls
+        if (!promise || typeof promise.then !== 'function') {
+          promise = NativePromise.resolve(promise);
+        }
 
         // When the promise resolves, run a hook if we have one.
         promise.then(function (result) {

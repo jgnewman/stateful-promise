@@ -162,8 +162,8 @@ export function promiseIteration(settings) {
     const collector = { collection: settings.arr };
 
     const execFn = (item, index) => {
-      const promise = settings.iterator(item, index);
-      let   didInc  = false;
+      let  promise = settings.iterator(item, index);
+      let  didInc  = false;
 
       const next = (didResolve, result) => {
         if (!didInc) {
@@ -179,6 +179,11 @@ export function promiseIteration(settings) {
           }
           inc === settings.arr.length && resolve(settings.state);
         }
+      }
+
+      // Allow non-promise values from our iterator calls
+      if (!promise || typeof promise.then !== 'function') {
+        promise = NativePromise.resolve(promise);
       }
 
       // When the promise resolves, run a hook if we have one.
@@ -227,9 +232,9 @@ export function promiseIterationSync(settings) {
 
     const runLoop = (array, index) => {
       if (array.length) {
-        let didAdvance = false;
+        let   didAdvance = false;
         const item = array[0];
-        const promise = settings.iterator(item, index);
+        let   promise = settings.iterator(item, index);
 
         const next = (didResolve, result) => {
           if (!didAdvance) {
@@ -251,6 +256,11 @@ export function promiseIterationSync(settings) {
             }
           }
         };
+
+        // Allow non-promise values from our iterator calls
+        if (!promise || typeof promise.then !== 'function') {
+          promise = NativePromise.resolve(promise);
+        }
 
         // When the promise resolves, run a hook if we have one.
         promise.then(result => {
