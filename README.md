@@ -787,13 +787,34 @@ promiser({ num: 20 })
 
 .then(state => {
   return state.rejectIfAny(
-    [state.num > 10, 'too big']
+    [state.num > 10, 'too big'],
     [state.num < 10, 'too small']
   )
 })
 
 .catch((state, err) => {
   console.log(err) // <- 'too big'
+})
+```
+
+#### `State#rejectIfAll(conditions [, err])`
+
+Manually reject a promise if many conditions are all true.
+
+- `conditions` {Array} Each item is assessed for truthiness. If any are false, the rejection won't occur.
+- `err` {Any} _Optional._ The error message passed to the rejection.
+
+Returns a Promise that resolves with the state.
+
+```javascript
+promiser({ num: 20 })
+
+.then(state => {
+  return state.rejectIfAll([state.num > 10, state.num < 10], "doesn't equal 10")
+})
+
+.catch((state, err) => {
+  console.log(err) // <- "doesn't equal 10"
 })
 ```
 
