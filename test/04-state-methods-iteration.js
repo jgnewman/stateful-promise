@@ -46,6 +46,22 @@ describe('Iterative State Methods', function () {
     });
   });
 
+  it('should resolve even when a collection is empty', function (done) {
+    let promise = promiser({ foo: [], bar: false });
+
+    promise.then(state => {
+      return state.forEach('foo', () => {
+        return new Promise(resolce => {
+          state.bar = true;
+        });
+      });
+    })
+    .then(state => {
+      assert.equal(state.bar, false);
+      done();
+    });
+  });
+
   it('should map a state property synchronously and asynchronously', function (done) {
     const promise = promiser({ foo: [1, 2, 3] });
     let   inc     = 0;

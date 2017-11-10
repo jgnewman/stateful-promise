@@ -27,16 +27,18 @@ class State {
 
   /**
    * Allows you to handle a raw promise in a stateful-promise way.
-   * @param  {Maybe Promise} promise  The result of this promise is just passed through the system
-   *                                  without manipulating anything.
-   * @param  {Any}           err      Optional. The error to collect if the promise is rejected.
+   * @param  {Maybe Promise} maybePromise  The result of this promise is just passed through the system
+   *                                       without manipulating anything.
+   * @param  {Any}           err           Optional. The error to collect if the promise is rejected.
    *
    * @return {Promise} Always resolves with this.
    */
-  handle(promise, err) {
-    const promiseVal = !promise || typeof promise.then !== 'function'
-                     ? createNativePromise(resolve => resolve(promise))
-                     : promise;
+  handle(maybePromise, err) {
+    const promiseVal = !maybePromise || typeof maybePromise.then !== 'function'
+                     ? createNativePromise(resolve => {
+                         resolve(typeof maybePromise === 'function' ? maybePromise() : maybePromise)
+                       })
+                     : maybePromise;
 
     return statifyPromise(this, promiseVal, err).then(val => {
       return fixAsyncAwait(this, val);

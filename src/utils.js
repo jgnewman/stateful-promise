@@ -162,8 +162,8 @@ export function promiseIteration(settings) {
     const collector = { collection: settings.arr };
 
     const execFn = (item, index) => {
-      let  promise = settings.iterator(item, index);
-      let  didInc  = false;
+      let promise = settings.iterator(item, index);
+      let didInc  = false;
 
       const next = (didResolve, result) => {
         if (!didInc) {
@@ -203,7 +203,11 @@ export function promiseIteration(settings) {
       });
     };
 
-    settings.arr.forEach((item, index) => execFn(item, index));
+    if (settings.arr.length) {
+      settings.arr.forEach((item, index) => execFn(item, index));
+    } else {
+      resolve(settings.state);
+    }
 
   });
 }

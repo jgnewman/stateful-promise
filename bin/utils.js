@@ -217,9 +217,13 @@ function promiseIteration(settings) {
       });
     };
 
-    settings.arr.forEach(function (item, index) {
-      return execFn(item, index);
-    });
+    if (settings.arr.length) {
+      settings.arr.forEach(function (item, index) {
+        return execFn(item, index);
+      });
+    } else {
+      resolve(settings.state);
+    }
   });
 }
 
